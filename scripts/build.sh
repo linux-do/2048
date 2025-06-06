@@ -37,15 +37,10 @@ fi
 
 # Create necessary directories
 print_status "Creating build directories..."
-mkdir -p backend/cmd/server/static/{css,js}
 mkdir -p backend/bin
 
-# Copy static files to the backend static directory
-print_status "Copying static files..."
-cp -r backend/cmd/server/static/* backend/static/ 2>/dev/null || true
-
-# Build the Go backend
-print_status "Building Go backend..."
+# Build the application
+print_status "Building application..."
 cd backend
 
 # Check Go version
@@ -65,13 +60,13 @@ else
 fi
 
 # Build the binary
-print_status "Compiling backend binary..."
+print_status "Compiling binary..."
 CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o bin/server cmd/server/main.go
 
 if [ $? -eq 0 ]; then
-    print_success "Backend binary built successfully: backend/bin/server"
+    print_success "Binary built successfully: backend/bin/server"
 else
-    print_error "Failed to build backend binary"
+    print_error "Failed to build binary"
     exit 1
 fi
 
@@ -81,38 +76,11 @@ go build -o bin/server-dev cmd/server/main.go
 
 cd ..
 
-# Frontend build (if using Bun)
-if command -v bun &> /dev/null; then
-    print_status "Building frontend with Bun..."
-    cd frontend
-    
-    if [ -f "package.json" ]; then
-        print_status "Installing frontend dependencies..."
-        bun install
-        
-        print_status "Building frontend..."
-        bun run build
-        
-        # Copy built files to backend static directory
-        if [ -d "dist" ]; then
-            print_status "Copying frontend build to backend..."
-            cp -r dist/* ../backend/static/
-        fi
-    else
-        print_warning "No package.json found in frontend directory"
-    fi
-    
-    cd ..
-else
-    print_warning "Bun not found, skipping frontend build"
-fi
-
 # Create deployment package
 print_status "Creating deployment package..."
 mkdir -p dist
 tar -czf dist/game2048-$(date +%Y%m%d-%H%M%S).tar.gz \
     backend/bin/server \
-    backend/static \
     docker/docker-compose.yml \
     docker/Dockerfile.backend \
     .env.example \
@@ -121,7 +89,7 @@ tar -czf dist/game2048-$(date +%Y%m%d-%H%M%S).tar.gz \
 print_success "Build completed successfully!"
 print_status "Deployment package created in dist/ directory"
 print_status "To run the development server: cd backend && ./bin/server-dev"
-print_status "To deploy with Docker: docker-compose up -d"
+print_status "To deploy with Docker: ./scripts/deploy.sh"
 
 echo ""
 echo "🚀 Ready to launch your 2048 game!"

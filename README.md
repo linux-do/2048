@@ -15,13 +15,6 @@ A complete 2048 game implementation with client-server architecture, OAuth2 auth
 
 ## Tech Stack
 
-### Frontend
-- **Runtime**: Bun
-- **Languages**: HTML5, CSS3, JavaScript (ES6+)
-- **Communication**: WebSocket
-- **Build**: Bun bundler
-
-### Backend
 - **Language**: Go 1.21+
 - **Framework**: Gin
 - **Database**: PostgreSQL
@@ -39,7 +32,6 @@ A complete 2048 game implementation with client-server architecture, OAuth2 auth
 
 ### Prerequisites
 - Docker & Docker Compose
-- Bun (for development)
 - Go 1.21+ (for development)
 
 ### Development Setup
@@ -47,31 +39,22 @@ A complete 2048 game implementation with client-server architecture, OAuth2 auth
 1. **Clone and setup**:
 ```bash
 git clone <repository>
-cd game2048
+cd 2048
 cp .env.example .env
 # Edit .env with your OAuth2 credentials
 ```
 
 2. **Start development environment**:
 ```bash
-# Start database
-docker-compose up -d postgres redis
-
-# Start backend (development mode)
-cd backend
-go run cmd/server/main.go
-
-# Start frontend (development mode)
-cd frontend
-bun install
-bun dev
+# Use the development script
+./scripts/dev.sh
 ```
 
 ### Production Deployment
 
 ```bash
 # Build and deploy everything
-docker-compose up -d
+./scripts/deploy.sh
 ```
 
 The game will be available at `http://localhost:6060`
@@ -79,7 +62,7 @@ The game will be available at `http://localhost:6060`
 ## Architecture
 
 ### Client-Server Communication
-- Frontend sends user inputs (swipe/key directions) via WebSocket
+- Web interface sends user inputs (swipe/key directions) via WebSocket
 - Server processes game logic and returns updated game state
 - Server manages scoring, victory conditions, and game persistence
 - Real-time leaderboard updates
@@ -98,15 +81,6 @@ The game will be available at `http://localhost:6060`
 
 ## Development
 
-### Frontend Development
-```bash
-cd frontend
-bun install
-bun dev        # Development server
-bun build      # Production build
-```
-
-### Backend Development
 ```bash
 cd backend
 go mod tidy
@@ -138,14 +112,19 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 # OAuth2
-OAUTH2_CLIENT_ID=your_client_id
-OAUTH2_CLIENT_SECRET=your_client_secret
+OAUTH2_PROVIDER=custom  # custom, google, github, etc.
+OAUTH2_CLIENT_ID=your_oauth2_client_id
+OAUTH2_CLIENT_SECRET=your_oauth2_client_secret
 OAUTH2_REDIRECT_URL=http://localhost:6060/auth/callback
-OAUTH2_PROVIDER=google  # google, github, etc.
+
+# Custom OAuth2 Endpoints (for custom provider)
+OAUTH2_AUTH_URL=https://connect.linux.do/oauth2/authorize
+OAUTH2_TOKEN_URL=https://connect.linux.do/oauth2/token
+OAUTH2_USERINFO_URL=https://connect.linux.do/api/user
 
 # Server
 SERVER_PORT=6060
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 ```
 
 ## API Documentation

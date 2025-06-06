@@ -81,21 +81,21 @@ for i in {1..30}; do
     sleep 1
 done
 
-# Build the backend
-print_status "Building backend..."
+# Build the application
+print_status "Building application..."
 cd backend
 go mod tidy
 go build -o bin/server-dev cmd/server/main.go
 
 if [ $? -eq 0 ]; then
-    print_success "Backend built successfully"
+    print_success "Application built successfully"
 else
-    print_error "Failed to build backend"
+    print_error "Failed to build application"
     exit 1
 fi
 
-# Start the backend server
-print_status "Starting backend server..."
+# Start the server
+print_status "Starting server..."
 print_status "Server will be available at: http://localhost:6060"
 print_status "Press Ctrl+C to stop the server"
 
