@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"game2048/internal/auth"
 	"game2048/internal/cache"
@@ -195,9 +200,27 @@ func main() {
 		})
 	})
 
-	// Start server
-	log.Printf("Starting server on %s", cfg.GetServerAddress())
-	if err := router.Run(cfg.GetServerAddress()); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// Start server with graceful shutdown
+	srv := &http.Server{
+		Addr:    cfg.GetServerAddress(),
+		Handler: router,
+	}
+
+	go func() {
+		log.Printf("Starting server on %s", cfg.GetServerAddress())
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 }

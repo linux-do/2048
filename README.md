@@ -8,6 +8,7 @@ A complete 2048 game implementation with client-server architecture, OAuth2 auth
 
 - **Victory Condition**: Game ends when two 8192 tiles merge
 - **Mobile Compatible**: Responsive design with touch support
+- **Dark Mode**: Optional dark theme toggle
 - **Real-time Communication**: WebSocket-based client-server communication
 - **Authentication**: OAuth2 integration for user login
 - **Leaderboards**: Daily, weekly, monthly, and all-time rankings
