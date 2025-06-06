@@ -171,6 +171,11 @@ class CanvasGame {
     }
     
     handleMove(direction) {
+        // Prevent moves during animations to avoid visual glitches
+        if (this.isAnimating) {
+            return;
+        }
+
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.lastMoveDirection = direction;
             this.ws.send(JSON.stringify({
@@ -218,15 +223,31 @@ class CanvasGame {
         this.newTileAnimations = [];
         this.moveAnimations = [];
 
-        // Simple approach: only detect merges and new tiles
-        // Don't animate moves to avoid confusion
+        // Track tiles to implement move animations using a more sophisticated approach
+        const moveMap = this.calculateTileMoves(oldBoard, newBoard);
+
+        // Create move animations for tiles that actually moved
+        for (const move of moveMap) {
+            this.moveAnimations.push({
+                fromRow: move.fromRow,
+                fromCol: move.fromCol,
+                toRow: move.toRow,
+                toCol: move.toCol,
+                value: move.value,
+                startTime: Date.now(),
+                duration: 150 // Smooth move animation
+            });
+        }
 
         // Count total tiles to detect if merges occurred
         const oldTileCount = oldBoard.flat().filter(v => v > 0).length;
         const newTileCount = newBoard.flat().filter(v => v > 0).length;
         const mergesOccurred = oldTileCount > newTileCount;
 
-        // Find all positions that changed
+        // Create a set of positions that are moving for quick lookup
+        const movingPositions = new Set(moveMap.map(move => `${move.toRow},${move.toCol}`));
+
+        // Find all positions that changed for merges and new tiles
         for (let row = 0; row < 4; row++) {
             for (let col = 0; col < 4; col++) {
                 const oldValue = oldBoard[row][col];
@@ -250,34 +271,235 @@ class CanvasGame {
                 }
                 // Case 2: New tile appeared in previously empty space
                 else if (oldValue === 0 && newValue > 0) {
-                    // Only treat as new tile if no merges occurred, or if it's a small value (2 or 4)
-                    if (!mergesOccurred || newValue <= 4) {
-                        this.newTileAnimations.push({
-                            row: row,
-                            col: col,
-                            value: newValue,
-                            startTime: Date.now(),
-                            duration: 150
-                        });
-                    }
-                    // If merges occurred and it's a larger value, it's likely a merge result
-                    else {
-                        // Only show merge animation if we can confirm it's actually a merge
-                        if (this.isLikelyMergeResult(oldBoard, newBoard, row, col, newValue)) {
-                            this.mergeAnimations.push({
+                    // Only treat as new tile if it's not part of a move animation
+                    if (!movingPositions.has(`${row},${col}`)) {
+                        // Only treat as new tile if no merges occurred, or if it's a small value (2 or 4)
+                        if (!mergesOccurred || newValue <= 4) {
+                            this.newTileAnimations.push({
                                 row: row,
                                 col: col,
                                 value: newValue,
                                 startTime: Date.now(),
-                                duration: 200
+                                duration: 150
                             });
-                            this.createMergeParticles(row, col);
+                        }
+                        // If merges occurred and it's a larger value, it's likely a merge result
+                        else {
+                            // Only show merge animation if we can confirm it's actually a merge
+                            if (this.isLikelyMergeResult(oldBoard, newBoard, row, col, newValue)) {
+                                this.mergeAnimations.push({
+                                    row: row,
+                                    col: col,
+                                    value: newValue,
+                                    startTime: Date.now(),
+                                    duration: 200
+                                });
+                                this.createMergeParticles(row, col);
+                            }
                         }
                     }
                 }
             }
         }
     }
+
+    // Advanced tile movement calculation
+    calculateTileMoves(oldBoard, newBoard) {
+        if (!this.lastMoveDirection) {
+            return [];
+        }
+
+        const moves = [];
+        
+        // For each direction, simulate the movement and track tile positions
+        switch (this.lastMoveDirection) {
+            case 'left':
+                for (let row = 0; row < 4; row++) {
+                    moves.push(...this.trackRowMovement(oldBoard, newBoard, row, 'left'));
+                }
+                break;
+            case 'right':
+                for (let row = 0; row < 4; row++) {
+                    moves.push(...this.trackRowMovement(oldBoard, newBoard, row, 'right'));
+                }
+                break;
+            case 'up':
+                for (let col = 0; col < 4; col++) {
+                    moves.push(...this.trackColMovement(oldBoard, newBoard, col, 'up'));
+                }
+                break;
+            case 'down':
+                for (let col = 0; col < 4; col++) {
+                    moves.push(...this.trackColMovement(oldBoard, newBoard, col, 'down'));
+                }
+                break;
+        }
+        
+        return moves;
+    }
+
+    // Track tile movements in a row
+    trackRowMovement(oldBoard, newBoard, row, direction) {
+        const moves = [];
+        const oldRow = oldBoard[row];
+        const newRow = newBoard[row];
+        
+        // Extract non-zero tiles from old and new rows
+        const oldTiles = [];
+        const newTiles = [];
+        
+        for (let col = 0; col < 4; col++) {
+            if (oldRow[col] > 0) {
+                oldTiles.push({ value: oldRow[col], originalCol: col });
+            }
+            if (newRow[col] > 0) {
+                newTiles.push({ value: newRow[col], finalCol: col });
+            }
+        }
+        
+        if (direction === 'left') {
+            // For left movement, tiles move to lower indices
+            let oldIndex = 0;
+            for (let newIndex = 0; newIndex < newTiles.length && oldIndex < oldTiles.length; newIndex++) {
+                const newTile = newTiles[newIndex];
+                const oldTile = oldTiles[oldIndex];
+                
+                if (newTile.value === oldTile.value) {
+                    // Simple move
+                    if (newTile.finalCol !== oldTile.originalCol) {
+                        moves.push({
+                            fromRow: row,
+                            fromCol: oldTile.originalCol,
+                            toRow: row,
+                            toCol: newTile.finalCol,
+                            value: oldTile.value
+                        });
+                    }
+                    oldIndex++;
+                } else if (newTile.value === oldTile.value * 2 && 
+                          oldIndex + 1 < oldTiles.length && 
+                          oldTiles[oldIndex + 1].value === oldTile.value) {
+                    // Merge: two tiles of same value became one with double value
+                    // Don't create move animation for merges, let merge animation handle it
+                    oldIndex += 2; // Skip both merged tiles
+                } else {
+                    oldIndex++;
+                }
+            }
+        } else if (direction === 'right') {
+            // For right movement, tiles move to higher indices
+            let oldIndex = oldTiles.length - 1;
+            for (let newIndex = newTiles.length - 1; newIndex >= 0 && oldIndex >= 0; newIndex--) {
+                const newTile = newTiles[newIndex];
+                const oldTile = oldTiles[oldIndex];
+                
+                if (newTile.value === oldTile.value) {
+                    // Simple move
+                    if (newTile.finalCol !== oldTile.originalCol) {
+                        moves.push({
+                            fromRow: row,
+                            fromCol: oldTile.originalCol,
+                            toRow: row,
+                            toCol: newTile.finalCol,
+                            value: oldTile.value
+                        });
+                    }
+                    oldIndex--;
+                } else if (newTile.value === oldTile.value * 2 && 
+                          oldIndex - 1 >= 0 && 
+                          oldTiles[oldIndex - 1].value === oldTile.value) {
+                    // Merge: two tiles of same value became one with double value
+                    oldIndex -= 2; // Skip both merged tiles
+                } else {
+                    oldIndex--;
+                }
+            }
+        }
+        
+        return moves;
+    }
+
+    // Track tile movements in a column
+    trackColMovement(oldBoard, newBoard, col, direction) {
+        const moves = [];
+        const oldCol = oldBoard.map(row => row[col]);
+        const newCol = newBoard.map(row => row[col]);
+        
+        // Extract non-zero tiles from old and new columns
+        const oldTiles = [];
+        const newTiles = [];
+        
+        for (let row = 0; row < 4; row++) {
+            if (oldCol[row] > 0) {
+                oldTiles.push({ value: oldCol[row], originalRow: row });
+            }
+            if (newCol[row] > 0) {
+                newTiles.push({ value: newCol[row], finalRow: row });
+            }
+        }
+        
+        if (direction === 'up') {
+            // For up movement, tiles move to lower indices
+            let oldIndex = 0;
+            for (let newIndex = 0; newIndex < newTiles.length && oldIndex < oldTiles.length; newIndex++) {
+                const newTile = newTiles[newIndex];
+                const oldTile = oldTiles[oldIndex];
+                
+                if (newTile.value === oldTile.value) {
+                    // Simple move
+                    if (newTile.finalRow !== oldTile.originalRow) {
+                        moves.push({
+                            fromRow: oldTile.originalRow,
+                            fromCol: col,
+                            toRow: newTile.finalRow,
+                            toCol: col,
+                            value: oldTile.value
+                        });
+                    }
+                    oldIndex++;
+                } else if (newTile.value === oldTile.value * 2 && 
+                          oldIndex + 1 < oldTiles.length && 
+                          oldTiles[oldIndex + 1].value === oldTile.value) {
+                    // Merge: two tiles of same value became one with double value
+                    oldIndex += 2; // Skip both merged tiles
+                } else {
+                    oldIndex++;
+                }
+            }
+        } else if (direction === 'down') {
+            // For down movement, tiles move to higher indices
+            let oldIndex = oldTiles.length - 1;
+            for (let newIndex = newTiles.length - 1; newIndex >= 0 && oldIndex >= 0; newIndex--) {
+                const newTile = newTiles[newIndex];
+                const oldTile = oldTiles[oldIndex];
+                
+                if (newTile.value === oldTile.value) {
+                    // Simple move
+                    if (newTile.finalRow !== oldTile.originalRow) {
+                        moves.push({
+                            fromRow: oldTile.originalRow,
+                            fromCol: col,
+                            toRow: newTile.finalRow,
+                            toCol: col,
+                            value: oldTile.value
+                        });
+                    }
+                    oldIndex--;
+                } else if (newTile.value === oldTile.value * 2 && 
+                          oldIndex - 1 >= 0 && 
+                          oldTiles[oldIndex - 1].value === oldTile.value) {
+                    // Merge: two tiles of same value became one with double value
+                    oldIndex -= 2; // Skip both merged tiles
+                } else {
+                    oldIndex--;
+                }
+            }
+        }
+        
+        return moves;
+    }
+
+
 
     isLikelyMergeResult(oldBoard, newBoard, row, col, value) {
         const halfValue = value / 2;
@@ -290,10 +512,6 @@ class CanvasGame {
         return oldHalfCount - newHalfCount >= 2;
     }
 
-
-
-
-    
     render() {
         // Clear the entire canvas
         this.ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
@@ -324,7 +542,8 @@ class CanvasGame {
 
     isAnimatingTile(row, col) {
         return this.mergeAnimations.some(anim => anim.row === row && anim.col === col) ||
-               this.newTileAnimations.some(anim => anim.row === row && anim.col === col);
+               this.newTileAnimations.some(anim => anim.row === row && anim.col === col) ||
+               this.moveAnimations.some(anim => anim.toRow === row && anim.toCol === col);
     }
 
     createMergeParticles(row, col) {
@@ -515,8 +734,6 @@ class CanvasGame {
         // Clear and draw base state
         this.render();
 
-
-
         // Draw merge animations
         this.mergeAnimations = this.mergeAnimations.filter(anim => {
             const elapsed = now - anim.startTime;
@@ -528,6 +745,37 @@ class CanvasGame {
                 // Bounce effect for merges
                 const scale = 1 + 0.3 * Math.sin(progress * Math.PI);
                 this.drawTile(anim.row, anim.col, anim.value, scale);
+
+                return true;
+            }
+            return false;
+        });
+
+        // Draw move animations
+        this.moveAnimations = this.moveAnimations.filter(anim => {
+            const elapsed = now - anim.startTime;
+            const progress = Math.min(elapsed / anim.duration, 1);
+
+            if (progress < 1) {
+                hasActiveAnimations = true;
+
+                // Calculate smooth movement with easing
+                const easedProgress = this.easeOutCubic(progress);
+                
+                // Calculate position interpolation
+                const fromX = this.padding + anim.fromCol * (this.tileSize + this.gap);
+                const fromY = this.padding + anim.fromRow * (this.tileSize + this.gap);
+                const toX = this.padding + anim.toCol * (this.tileSize + this.gap);
+                const toY = this.padding + anim.toRow * (this.tileSize + this.gap);
+                
+                const currentX = fromX + (toX - fromX) * easedProgress;
+                const currentY = fromY + (toY - fromY) * easedProgress;
+                
+                // Calculate offset from grid position
+                const offsetX = currentX - (this.padding + anim.toCol * (this.tileSize + this.gap));
+                const offsetY = currentY - (this.padding + anim.toRow * (this.tileSize + this.gap));
+                
+                this.drawTile(anim.toRow, anim.toCol, anim.value, 1, 1, offsetX, offsetY);
 
                 return true;
             }
