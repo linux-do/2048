@@ -1,0 +1,38 @@
+/* Dark mode overrides */
+body.dark-mode {
+    background: #1e1e1e;
+    color: #f3f3f3;
+}
+
+body.dark-mode .game-title,
+body.dark-mode .score-label,
+body.dark-mode .score-value,
+body.dark-mode .user-name {
+    color: #f3f3f3;
+}
+
+body.dark-mode .instructions,
+body.dark-mode .connection-status {
+    background: #333;
+    color: #f3f3f3;
+}
+
+body.dark-mode .score-box,
+body.dark-mode .new-game-btn,
+body.dark-mode .logout-btn,
+body.dark-mode .overlay-btn,
+body.dark-mode .theme-toggle-btn {
+    background: #555;
+    color: #f3f3f3;
+}
+
+body.dark-mode .new-game-btn:hover,
+body.dark-mode .logout-btn:hover,
+body.dark-mode .overlay-btn:hover,
+body.dark-mode .theme-toggle-btn:hover {
+    background: #777;
+}
+
+body.dark-mode .leaderboard-entry {
+    background: #444;
+}
