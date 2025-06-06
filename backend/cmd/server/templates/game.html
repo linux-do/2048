@@ -39,6 +39,10 @@
         </div>
         <div class="game-controls">
             <button class="new-game-btn" onclick="startNewGame()">New Game</button>
+            <div class="audio-controls">
+                <button class="audio-toggle-btn" id="audio-toggle" onclick="toggleAudio()" title="切换音效">🔊</button>
+                <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50" title="音量调节">
+            </div>
         </div>
     </div>
 
@@ -77,6 +81,7 @@
         }
     };
 </script>
+<script src="{{static "/js/audio-manager.js"}}"></script>
 <script src="{{static "/js/websocket.js"}}"></script>
 <script src="{{static "/js/canvas-game.js"}}"></script>
 <script src="{{static "/js/auth.js"}}"></script>
@@ -122,6 +127,70 @@
             window.canvasGame.newGame();
         }
     }
+
+    // Audio control functions
+    function toggleAudio() {
+        const audioBtn = document.getElementById('audio-toggle');
+        if (window.audioManager) {
+            const enabled = !window.audioManager.enabled;
+            window.audioManager.setEnabled(enabled);
+            audioBtn.textContent = enabled ? '🔊' : '🔇';
+            audioBtn.title = enabled ? '关闭音效' : '开启音效';
+            
+            // Save preference
+            localStorage.setItem('audioEnabled', enabled);
+        }
+    }
+
+    // Initialize audio controls
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up volume control
+        const volumeSlider = document.getElementById('volume-slider');
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', function() {
+                if (window.audioManager) {
+                    const volume = this.value / 100;
+                    window.audioManager.setVolume(volume);
+                    localStorage.setItem('audioVolume', volume);
+                }
+            });
+        }
+
+        // Restore audio preferences
+        setTimeout(() => {
+            const savedEnabled = localStorage.getItem('audioEnabled');
+            const savedVolume = localStorage.getItem('audioVolume');
+            
+            if (savedEnabled !== null) {
+                const enabled = savedEnabled === 'true';
+                window.audioManager.setEnabled(enabled);
+                const audioBtn = document.getElementById('audio-toggle');
+                if (audioBtn) {
+                    audioBtn.textContent = enabled ? '🔊' : '🔇';
+                    audioBtn.title = enabled ? '关闭音效' : '开启音效';
+                }
+            }
+            
+            if (savedVolume !== null) {
+                const volume = parseFloat(savedVolume);
+                window.audioManager.setVolume(volume);
+                if (volumeSlider) {
+                    volumeSlider.value = volume * 100;
+                }
+            }
+        }, 100);
+
+        // Enable audio on first user interaction
+        const enableAudio = () => {
+            if (window.audioManager) {
+                window.audioManager.resume();
+            }
+        };
+        
+        document.addEventListener('click', enableAudio, { once: true });
+        document.addEventListener('keydown', enableAudio, { once: true });
+        document.addEventListener('touchstart', enableAudio, { once: true });
+    });
 </script>
 
 <style>
@@ -196,6 +265,60 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+}
+
+.game-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.audio-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.audio-toggle-btn:hover {
+    background: rgba(119, 110, 101, 0.1);
+}
+
+.volume-slider {
+    width: 60px;
+    height: 4px;
+    appearance: none;
+    background: #ddd;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #8f7a66;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #8f7a66;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
 }
 
 .score-box {

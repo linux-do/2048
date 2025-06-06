@@ -186,8 +186,9 @@ class CanvasGame {
         const oldBoard = this.board.map(row => [...row]); // Deep copy
         const newBoard = gameState.board;
 
-        // Detect merges and new tiles
+        // Detect animations and moves
         this.detectAnimations(oldBoard, newBoard);
+        this.detectMoveAnimations(oldBoard, newBoard);
 
         this.board = newBoard;
         this.score = gameState.score;
@@ -199,6 +200,9 @@ class CanvasGame {
         if (scoreElement) {
             scoreElement.textContent = this.score.toLocaleString();
         }
+
+        // Play sound effects
+        this.playSoundEffects(oldBoard, newBoard);
 
         // Start animations if any
         if (this.mergeAnimations.length > 0 || this.newTileAnimations.length > 0 || this.moveAnimations.length > 0) {
@@ -216,10 +220,6 @@ class CanvasGame {
     detectAnimations(oldBoard, newBoard) {
         this.mergeAnimations = [];
         this.newTileAnimations = [];
-        this.moveAnimations = [];
-
-        // Simple approach: only detect merges and new tiles
-        // Don't animate moves to avoid confusion
 
         // Count total tiles to detect if merges occurred
         const oldTileCount = oldBoard.flat().filter(v => v > 0).length;
@@ -279,6 +279,146 @@ class CanvasGame {
         }
     }
 
+    detectMoveAnimations(oldBoard, newBoard) {
+        this.moveAnimations = [];
+        
+        if (!this.lastMoveDirection) return;
+
+        // Create a mapping of where tiles moved to
+        const moveMap = this.calculateTileMoves(oldBoard, newBoard, this.lastMoveDirection);
+        
+        for (const move of moveMap) {
+            if (move.fromRow !== move.toRow || move.fromCol !== move.toCol) {
+                this.moveAnimations.push({
+                    value: move.value,
+                    fromRow: move.fromRow,
+                    fromCol: move.fromCol,
+                    toRow: move.toRow,
+                    toCol: move.toCol,
+                    startTime: Date.now(),
+                    duration: 200
+                });
+            }
+        }
+    }
+
+    calculateTileMoves(oldBoard, newBoard, direction) {
+        const moves = [];
+        
+        // Simple heuristic: match tiles that moved in the direction of movement
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                const oldValue = oldBoard[row][col];
+                if (oldValue === 0) continue;
+
+                // Check if this tile stayed in the same position
+                if (newBoard[row][col] === oldValue) {
+                    continue;
+                }
+
+                // Find where this tile likely moved to
+                const targetPos = this.findTileTarget(oldValue, row, col, newBoard, direction);
+                if (targetPos) {
+                    moves.push({
+                        value: oldValue,
+                        fromRow: row,
+                        fromCol: col,
+                        toRow: targetPos.row,
+                        toCol: targetPos.col
+                    });
+                }
+            }
+        }
+        
+        return moves;
+    }
+
+    findTileTarget(value, fromRow, fromCol, newBoard, direction) {
+        // Search in the direction of movement for a matching tile
+        const directions = {
+            'up': [-1, 0],
+            'down': [1, 0],
+            'left': [0, -1],
+            'right': [0, 1]
+        };
+        
+        const [dRow, dCol] = directions[direction] || [0, 0];
+        
+        // Start from the current position and move in the direction
+        let row = fromRow + dRow;
+        let col = fromCol + dCol;
+        
+        while (row >= 0 && row < 4 && col >= 0 && col < 4) {
+            if (newBoard[row][col] === value) {
+                return { row, col };
+            }
+            row += dRow;
+            col += dCol;
+        }
+        
+        return null;
+    }
+
+    playSoundEffects(oldBoard, newBoard) {
+        if (!window.audioManager) return;
+
+        // Resume audio context if needed (requires user interaction)
+        window.audioManager.resume();
+
+        // Check for merges
+        let mergeCount = 0;
+        let highestMerge = 0;
+        
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                const oldValue = oldBoard[row][col];
+                const newValue = newBoard[row][col];
+                
+                // Detect merge: tile value doubled at same position
+                if (oldValue > 0 && newValue === oldValue * 2) {
+                    mergeCount++;
+                    highestMerge = Math.max(highestMerge, newValue);
+                }
+            }
+        }
+
+        // Play merge sound for the highest merged tile
+        if (mergeCount > 0) {
+            setTimeout(() => {
+                window.audioManager.playMerge(highestMerge);
+            }, 100); // Slight delay to sync with animation
+        }
+
+        // Check for new tiles
+        const oldTileCount = oldBoard.flat().filter(v => v > 0).length;
+        const newTileCount = newBoard.flat().filter(v => v > 0).length;
+        const hasNewTile = newTileCount > oldTileCount - mergeCount;
+        
+        if (hasNewTile && mergeCount === 0) {
+            // Only play new tile sound if no merges (to avoid sound overlap)
+            setTimeout(() => {
+                window.audioManager.playNewTile();
+            }, 150);
+        }
+
+        // Play move sound if tiles actually moved
+        const boardChanged = JSON.stringify(oldBoard) !== JSON.stringify(newBoard);
+        if (boardChanged && mergeCount === 0 && !hasNewTile) {
+            window.audioManager.playMove();
+        }
+
+        // Check for victory or game over
+        if (this.victory) {
+            setTimeout(() => {
+                window.audioManager.playVictory();
+            }, 300);
+        } else if (this.gameOver) {
+            setTimeout(() => {
+                window.audioManager.playGameOver();
+            }, 300);
+        }
+    }
+
     isLikelyMergeResult(oldBoard, newBoard, row, col, value) {
         const halfValue = value / 2;
 
@@ -324,7 +464,8 @@ class CanvasGame {
 
     isAnimatingTile(row, col) {
         return this.mergeAnimations.some(anim => anim.row === row && anim.col === col) ||
-               this.newTileAnimations.some(anim => anim.row === row && anim.col === col);
+               this.newTileAnimations.some(anim => anim.row === row && anim.col === col) ||
+               this.moveAnimations.some(anim => anim.toRow === row && anim.toCol === col);
     }
 
     createMergeParticles(row, col) {
@@ -516,6 +657,37 @@ class CanvasGame {
         this.render();
 
 
+
+        // Draw move animations
+        this.moveAnimations = this.moveAnimations.filter(anim => {
+            const elapsed = now - anim.startTime;
+            const progress = Math.min(elapsed / anim.duration, 1);
+
+            if (progress < 1) {
+                hasActiveAnimations = true;
+
+                // Calculate interpolated position
+                const easeProgress = this.easeOutCubic(progress);
+                const startX = this.padding + anim.fromCol * (this.tileSize + this.gap);
+                const startY = this.padding + anim.fromRow * (this.tileSize + this.gap);
+                const endX = this.padding + anim.toCol * (this.tileSize + this.gap);
+                const endY = this.padding + anim.toRow * (this.tileSize + this.gap);
+                
+                const currentX = startX + (endX - startX) * easeProgress;
+                const currentY = startY + (endY - startY) * easeProgress;
+                
+                // Calculate offset from grid position
+                const gridX = this.padding + anim.toCol * (this.tileSize + this.gap);
+                const gridY = this.padding + anim.toRow * (this.tileSize + this.gap);
+                const offsetX = currentX - gridX;
+                const offsetY = currentY - gridY;
+
+                this.drawTile(anim.toRow, anim.toCol, anim.value, 1, 1, offsetX, offsetY);
+
+                return true;
+            }
+            return false;
+        });
 
         // Draw merge animations
         this.mergeAnimations = this.mergeAnimations.filter(anim => {
