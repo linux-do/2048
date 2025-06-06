@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="{{static "/css/main.css"}}">
+    <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
+
+    <meta name="theme-color" content="#faf8ef">
+    <meta name="description" content="2048 Game Leaderboards - See the top players!">
+</head>
+<body>
+    <div class="leaderboard-page">
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">🏆 2048 Leaderboards</h1>
+                <p class="page-subtitle">Top players who merged two 8192 tiles!</p>
+                <div class="header-actions">
+                    <a href="/" class="btn btn-primary">Play Game</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="leaderboard-container">
+            <div class="leaderboard-tabs">
+                <button class="tab-btn active" data-type="daily" onclick="switchLeaderboard('daily')">Daily</button>
+                <button class="tab-btn" data-type="weekly" onclick="switchLeaderboard('weekly')">Weekly</button>
+                <button class="tab-btn" data-type="monthly" onclick="switchLeaderboard('monthly')">Monthly</button>
+                <button class="tab-btn" data-type="all" onclick="switchLeaderboard('all')">All Time</button>
+            </div>
+            
+            <div class="leaderboard-content" id="leaderboard-content">
+                <div class="loading">Loading leaderboard...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentType = 'daily';
+        let cache = new Map();
+
+        // Load initial leaderboard
+        loadLeaderboard('daily');
+
+        function switchLeaderboard(type) {
+            // Update active tab
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            
+            // Load leaderboard
+            loadLeaderboard(type);
+        }
+
+        async function loadLeaderboard(type) {
+            currentType = type;
+            
+            // Check cache first
+            if (cache.has(type)) {
+                displayLeaderboard(cache.get(type));
+                return;
+            }
+            
+            // Show loading state
+            showLoading();
+            
+            try {
+                const response = await fetch(`/api/public/leaderboard?type=${type}&limit=50`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch leaderboard');
+                }
+                
+                const data = await response.json();
+                
+                // Cache the data
+                cache.set(type, data);
+                
+                // Display the leaderboard
+                displayLeaderboard(data);
+            } catch (error) {
+                showError('Failed to load leaderboard. Please try again.');
+                console.error('Error loading leaderboard:', error);
+            }
+        }
+
+        function showLoading() {
+            const content = document.getElementById('leaderboard-content');
+            content.innerHTML = '<div class="loading">Loading leaderboard...</div>';
+        }
+
+        function showError(message) {
+            const content = document.getElementById('leaderboard-content');
+            content.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function displayLeaderboard(data) {
+            const content = document.getElementById('leaderboard-content');
+            
+            if (!data.rankings || data.rankings.length === 0) {
+                content.innerHTML = '<div class="empty">No games played yet. Be the first!</div>';
+                return;
+            }
+            
+            let html = '<div class="leaderboard-list">';
+            
+            data.rankings.forEach((entry, index) => {
+                const medal = index < 3 ? ['🥇', '🥈', '🥉'][index] : '';
+                const date = new Date(entry.created_at).toLocaleDateString();
+                
+                html += `
+                    <div class="leaderboard-entry ${index < 3 ? 'top-three' : ''}">
+                        <div class="rank">
+                            ${medal || entry.rank}
+                        </div>
+                        <div class="player-info">
+                            ${entry.user_avatar && entry.user_avatar.trim() !== '' ?
+                                `<img src="${entry.user_avatar}" alt="${entry.user_name}" class="player-avatar"/>` : ''
+                            }
+                            <div class="player-details">
+                                <div class="player-name">
+                                    <a href="https://linux.do/u/${entry.user_name}/summary" target="_blank" class="player-name-link">${entry.user_name}</a>
+                                </div>
+                                <div class="game-date">${date}</div>
+                            </div>
+                        </div>
+                        <div class="score">${entry.score.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            content.innerHTML = html;
+        }
+    </script>
+
+    <style>
+        .leaderboard-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #faf8ef 0%, #f2efe6 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .page-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #776e65;
+            margin: 0 0 10px 0;
+        }
+
+        .page-subtitle {
+            color: #8f7a66;
+            font-size: 1.2rem;
+            margin: 0 0 30px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #8f7a66;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #776e65;
+            transform: translateY(-1px);
+        }
+
+        .leaderboard-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .leaderboard-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 20px;
+            font-weight: 500;
+            color: #8f7a66;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .tab-btn.active {
+            background: #8f7a66;
+            color: white;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #f8f8f8;
+        }
+
+        .leaderboard-content {
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+        }
+
+        .loading, .error, .empty {
+            padding: 60px 20px;
+            text-align: center;
+            color: #8f7a66;
+            font-size: 1.1rem;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+        .leaderboard-list {
+            padding: 20px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #fafafa;
+            transition: all 0.2s ease;
+        }
+
+        .leaderboard-entry:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+
+        .leaderboard-entry.top-three {
+            background: linear-gradient(135deg, #fff9e6, #fff3cd);
+            border: 2px solid #f39c12;
+        }
+
+        .rank {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #776e65;
+            width: 60px;
+            text-align: center;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            margin: 0 20px;
+        }
+
+        .player-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+
+        .player-avatar-default {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #8f7a66;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: #776e65;
+            font-size: 1.1rem;
+        }
+
+        .player-name-link {
+            color: #776e65;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .player-name-link:hover {
+            color: #8f7a66;
+            text-decoration: underline;
+        }
+
+        .game-date {
+            color: #8f7a66;
+            font-size: 0.9rem;
+            margin-top: 2px;
+        }
+
+        .score {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #f39c12;
+        }
+
+        @media (max-width: 600px) {
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .leaderboard-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab-btn {
+                flex: 1 1 50%;
+            }
+            
+            .leaderboard-entry {
+                padding: 12px 15px;
+            }
+            
+            .rank {
+                width: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .player-info {
+                margin: 0 10px;
+            }
+            
+            .score {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</body>
+</html>

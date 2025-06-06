@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="{{static "/css/main.css"}}">
+    <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
+
+    <meta name="theme-color" content="#faf8ef">
+    <meta name="description" content="Play 2048 - Merge two 8192 tiles to win!">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="header-left">
+                <h1 class="game-title">2048</h1>
+                <p class="game-subtitle">Merge two 8192 tiles to win!</p>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    {{if .user.Avatar}}
+                    <img src="{{.user.Avatar}}" alt="{{.user.Name}}" class="user-avatar"/>
+                    {{end}}
+                    <span class="user-name">{{.user.Name}}</span>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+    <!-- Game Info -->
+    <div class="game-info">
+        <div class="score-container">
+            <div class="score-box">
+                <div class="score-label">Score</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+        </div>
+        <div class="game-controls">
+            <button class="new-game-btn" onclick="startNewGame()">New Game</button>
+        </div>
+    </div>
+
+    <!-- Game Board -->
+    <div class="game-board-container">
+        <canvas id="game-canvas" class="game-canvas"></canvas>
+        <div class="game-overlay" id="game-overlay" style="display: none;">
+            <div class="overlay-content">
+                <div class="overlay-message" id="overlay-message"></div>
+                <button class="overlay-btn" onclick="startNewGame()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        <p><strong>How to play:</strong> Use arrow keys or swipe to move tiles. When two tiles with the same number touch, they merge into one!</p>
+        <p><a href="/leaderboard" class="leaderboard-link">🏆 View Leaderboards</a></p>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="connection-status" id="connection-status">
+        <span class="status-indicator" id="status-indicator"></span>
+        <span class="status-text" id="status-text">Connecting...</span>
+    </div>
+</div>
+
+<!-- Game Scripts -->
+<script>
+    // Pass user data to JavaScript
+    window.gameData = {
+        user: {
+            id: '{{.user.ID}}',
+            name: '{{.user.Name}}',
+            avatar: '{{.user.Avatar}}'
+        }
+    };
+</script>
+<script src="{{static "/js/websocket.js"}}"></script>
+<script src="{{static "/js/canvas-game.js"}}"></script>
+<script src="{{static "/js/auth.js"}}"></script>
+<script>
+    // Initialize Canvas Game
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize canvas game immediately
+        window.canvasGame = new CanvasGame('game-canvas', null);
+        console.log('Canvas game initialized');
+
+        // Set up WebSocket connection callback
+        function connectCanvasToWebSocket() {
+            if (window.gameWS && window.gameWS.ws && window.gameWS.ws.readyState === WebSocket.OPEN) {
+                window.canvasGame.setWebSocket(window.gameWS.ws);
+                console.log('Canvas game connected to WebSocket');
+                return true;
+            }
+            return false;
+        }
+
+        // Try to connect immediately
+        if (!connectCanvasToWebSocket()) {
+            // If not ready, wait and retry
+            const checkConnection = setInterval(() => {
+                if (connectCanvasToWebSocket()) {
+                    clearInterval(checkConnection);
+                }
+            }, 100);
+
+            // Stop trying after 5 seconds
+            setTimeout(() => {
+                clearInterval(checkConnection);
+                if (!window.canvasGame.ws) {
+                    console.error('Failed to connect canvas game to WebSocket');
+                }
+            }, 5000);
+        }
+    });
+
+    // Global functions for UI
+    function startNewGame() {
+        if (window.canvasGame) {
+            window.canvasGame.newGame();
+        }
+    }
+</script>
+
+<style>
+.game-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.game-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #776e65;
+    margin: 0;
+}
+
+.game-subtitle {
+    color: #8f7a66;
+    margin: 5px 0 0 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-avatar-default {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #8f7a66;
+}
+
+.user-name {
+    color: #776e65;
+    font-weight: 500;
+}
+
+.logout-btn {
+    background: #8f7a66;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.logout-btn:hover {
+    background: #776e65;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.score-box {
+    background: #bbada0;
+    border-radius: 6px;
+    padding: 10px 20px;
+    text-align: center;
+    color: white;
+}
+
+.score-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.score-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.new-game-btn {
+    background: #8f7a66;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.new-game-btn:hover {
+    background: #776e65;
+}
+
+.game-board-container {
+    position: relative;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.game-canvas {
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    touch-action: none;
+    user-select: none;
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.overlay-content {
+    text-align: center;
+}
+
+.overlay-message {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #776e65;
+    margin-bottom: 20px;
+}
+
+.overlay-btn {
+    background: #8f7a66;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.overlay-btn:hover {
+    background: #776e65;
+}
+
+.instructions {
+    background: #f8f8f8;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 30px;
+    color: #776e65;
+    text-align: center;
+}
+
+.instructions .leaderboard-link {
+    display: inline-block;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.instructions .leaderboard-link:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+.connection-status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 20px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.status-indicator.connected {
+    background: #4CAF50;
+}
+
+.status-indicator.connecting {
+    background: #FF9800;
+    animation: pulse 1s infinite;
+}
+
+.status-indicator.disconnected {
+    background: #F44336;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@media (max-width: 600px) {
+    .game-container {
+        padding: 8px;
+        max-width: 100%;
+    }
+
+    .game-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 8px 0;
+    }
+
+    .game-title {
+        font-size: 2rem;
+        margin: 0;
+    }
+
+    .game-subtitle {
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .user-info {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+    }
+
+    .user-name {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .logout-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 4px;
+    }
+
+    .game-info {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        gap: 10px;
+    }
+
+    .score-box {
+        padding: 8px 12px;
+        min-width: 80px;
+    }
+
+    .score-label {
+        font-size: 0.7rem;
+        margin-bottom: 2px;
+    }
+
+    .score-value {
+        font-size: 1.2rem;
+    }
+
+    .new-game-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+
+    .game-board-container {
+        margin-bottom: 12px;
+    }
+
+    .instructions {
+        padding: 10px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+    }
+
+    .instructions .leaderboard-link {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        margin-top: 8px;
+    }
+
+    .connection-status {
+        bottom: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+</style>
+</body>
+</html>

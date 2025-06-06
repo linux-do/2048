@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Successful - 2048 Game</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #faf8ef 0%, #f2efe6 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .success-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #776e65;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+        
+        p {
+            color: #8f7a66;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .user-info {
+            background: #f8f8f8;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: block;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #776e65;
+            margin-bottom: 5px;
+        }
+        
+        .user-email {
+            color: #8f7a66;
+            font-size: 0.9rem;
+        }
+        
+        .continue-btn {
+            background: #8f7a66;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            width: 100%;
+        }
+        
+        .continue-btn:hover {
+            background: #776e65;
+        }
+        
+        .loading {
+            display: none;
+            color: #8f7a66;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">✅</div>
+        <h1>Login Successful!</h1>
+        <p>Welcome to 2048! You're now signed in and ready to play.</p>
+        
+        <div class="user-info">
+            {{if .user.Avatar}}
+            <img src="{{.user.Avatar}}" alt="{{.user.Name}}" class="user-avatar">
+            {{end}}
+            <div class="user-name">{{.user.Name}}</div>
+            <div class="user-email">{{.user.Email}}</div>
+        </div>
+        
+        <button class="continue-btn" onclick="redirectToGame()">
+            Continue to Game
+        </button>
+        
+        <div class="loading" id="loading">
+            Redirecting to game...
+        </div>
+    </div>
+
+    <script>
+        // Store the JWT token for WebSocket authentication
+        const token = '{{.token}}';
+        localStorage.setItem('auth_token', token);
+        
+        function redirectToGame() {
+            document.querySelector('.continue-btn').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // Redirect to the main game page
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+        
+        // Auto-redirect after 3 seconds
+        setTimeout(redirectToGame, 3000);
+    </script>
+</body>
+</html>

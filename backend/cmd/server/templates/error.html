@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - 2048 Game</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #faf8ef 0%, #f2efe6 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .error-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #776e65;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .error-message {
+            color: #8f7a66;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #f44336;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: #8f7a66;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #776e65;
+        }
+        
+        .btn-secondary {
+            background: #bbada0;
+        }
+        
+        .btn-secondary:hover {
+            background: #a39489;
+        }
+        
+        .error-details {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #8f7a66;
+        }
+        
+        @media (max-width: 480px) {
+            .error-container {
+                padding: 30px 20px;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">❌</div>
+        <h1>Oops! Something went wrong</h1>
+        
+        <div class="error-message">
+            {{.error}}
+        </div>
+        
+        <div class="error-actions">
+            <a href="/" class="btn">Go Home</a>
+            <button onclick="history.back()" class="btn btn-secondary">Go Back</button>
+        </div>
+        
+        <div class="error-details">
+            <p>If this problem persists, please try:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Refreshing the page</li>
+                <li>Clearing your browser cache</li>
+                <li>Checking your internet connection</li>
+                <li>Trying again in a few minutes</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

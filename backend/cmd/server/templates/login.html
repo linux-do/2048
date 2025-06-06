@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="{{static "/css/main.css"}}">
+    <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
+
+    <meta name="theme-color" content="#faf8ef">
+    <meta name="description" content="Play 2048 - Merge two 8192 tiles to win!">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="game-logo">
+                <h1>2048</h1>
+                <p>Merge two 8192 tiles to win!</p>
+            </div>
+
+            <div class="login-content">
+                <h2>Welcome to 2048</h2>
+                <p>Sign in to save your progress and compete on the leaderboards</p>
+
+                <div class="login-buttons">
+                    <a href="/auth/login" class="login-btn">
+                        <svg version="1.2" baseProfile="tiny-ps" width="20" height="20" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                            <title>LINUX DO Logo</title>
+                            <clipPath id="a">
+                                <circle cx="60" cy="60" r="47"/>
+                            </clipPath>
+                            <circle fill="#f0f0f0" cx="60" cy="60" r="50"/>
+                            <rect fill="#1c1c1e" clip-path="url(#a)" x="10" y="10" width="100" height="30"/>
+                            <rect fill="#f0f0f0" clip-path="url(#a)" x="10" y="40" width="100" height="40"/>
+                            <rect fill="#ffb003" clip-path="url(#a)" x="10" y="80" width="100" height="30"/>
+                        </svg>
+                        Sign in with LINUX DO
+                    </a>
+                </div>
+
+                <div class="public-links">
+                    <a href="/leaderboard" class="leaderboard-link">
+                        🏆 View Leaderboards
+                    </a>
+                </div>
+
+                <div class="features">
+                    <div class="feature">
+                        <h3>🏆 Leaderboards</h3>
+                        <p>Compete with players worldwide</p>
+                    </div>
+                    <div class="feature">
+                        <h3>💾 Save Progress</h3>
+                        <p>Continue your games across devices</p>
+                    </div>
+                    <div class="feature">
+                        <h3>📱 Mobile Friendly</h3>
+                        <p>Play anywhere, anytime</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<style>
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #faf8ef 0%, #f2efe6 100%);
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.game-logo h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    color: #776e65;
+    margin: 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-logo p {
+    color: #8f7a66;
+    margin: 10px 0 30px 0;
+    font-size: 1.1rem;
+}
+
+.login-content h2 {
+    color: #776e65;
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.login-content > p {
+    color: #8f7a66;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.login-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 24px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
+}
+
+.login-btn:hover {
+    border-color: #4285F4;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
+    transform: translateY(-1px);
+}
+
+.public-links {
+    margin: 30px 0;
+    text-align: center;
+}
+
+.leaderboard-link {
+    display: inline-block;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+}
+
+.leaderboard-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+    background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+.features {
+    margin-top: 40px;
+    display: grid;
+    gap: 20px;
+}
+
+.feature {
+    text-align: left;
+}
+
+.feature h3 {
+    color: #776e65;
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+}
+
+.feature p {
+    color: #8f7a66;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 30px 20px;
+    }
+    
+    .game-logo h1 {
+        font-size: 3rem;
+    }
+}
+</style>
+    <script src="{{static "/js/main.js"}}"></script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+/* Mobile-specific styles for 2048 Game */
+
+/* Touch-friendly interactions */
+@media (max-width: 768px) {
+    /* Prevent text selection on touch */
+    .game-board,
+    .tile,
+    button {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Improve touch targets */
+    button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .tab-btn {
+        padding: 12px 8px;
+        font-size: 0.9rem;
+    }
+    
+    /* Game board adjustments */
+    .game-board {
+        touch-action: none;
+        padding: 8px;
+        grid-gap: 8px;
+    }
+    
+    /* Header adjustments */
+    .game-header {
+        padding: 10px 0;
+    }
+    
+    .game-title {
+        font-size: 2.5rem;
+    }
+    
+    .user-info {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .user-name {
+        font-size: 0.9rem;
+    }
+    
+    .logout-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    /* Score and controls */
+    .game-info {
+        gap: 10px;
+    }
+    
+    .score-box {
+        padding: 8px 16px;
+    }
+    
+    .score-label {
+        font-size: 0.7rem;
+    }
+    
+    .score-value {
+        font-size: 1.2rem;
+    }
+    
+    .new-game-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+    
+    /* Instructions */
+    .instructions {
+        padding: 12px;
+        font-size: 0.9rem;
+    }
+    
+    /* Leaderboard adjustments */
+    .leaderboard-section {
+        margin-bottom: 80px; /* Space for connection status */
+    }
+    
+    .leaderboard-content {
+        padding: 15px;
+    }
+    
+    .leaderboard-entry {
+        padding: 10px 12px;
+    }
+    
+    .leaderboard-entry .user-info {
+        margin-left: 10px;
+        gap: 8px;
+    }
+    
+    .leaderboard-entry .user-avatar {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .leaderboard-entry .user-name {
+        font-size: 0.9rem;
+    }
+    
+    .leaderboard-entry .score {
+        font-size: 1rem;
+    }
+    
+    /* Connection status adjustments */
+    .connection-status {
+        bottom: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    /* Game overlay adjustments */
+    .overlay-content {
+        padding: 20px;
+    }
+    
+    .overlay-message {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    
+    .overlay-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .game-container {
+        padding: 8px;
+    }
+    
+    .game-title {
+        font-size: 2rem;
+    }
+    
+    .game-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .game-board {
+        padding: 6px;
+        grid-gap: 6px;
+    }
+    
+    .score-box {
+        padding: 6px 12px;
+    }
+    
+    .score-label {
+        font-size: 0.6rem;
+    }
+    
+    .score-value {
+        font-size: 1rem;
+    }
+    
+    .new-game-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .instructions {
+        padding: 10px;
+        font-size: 0.8rem;
+    }
+    
+    .tab-btn {
+        padding: 10px 6px;
+        font-size: 0.8rem;
+    }
+    
+    .leaderboard-content {
+        padding: 10px;
+    }
+    
+    .leaderboard-entry {
+        padding: 8px 10px;
+    }
+    
+    .leaderboard-entry .rank {
+        font-size: 1rem;
+        min-width: 35px;
+    }
+    
+    .leaderboard-entry .user-info {
+        margin-left: 8px;
+        gap: 6px;
+    }
+    
+    .leaderboard-entry .user-avatar {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .leaderboard-entry .user-name {
+        font-size: 0.8rem;
+    }
+    
+    .leaderboard-entry .score {
+        font-size: 0.9rem;
+    }
+    
+    .you-badge {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .game-container {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        grid-gap: 20px;
+        max-width: none;
+        padding: 10px;
+    }
+    
+    .game-main {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .game-header {
+        margin-bottom: 10px;
+    }
+    
+    .game-info {
+        margin-bottom: 10px;
+    }
+    
+    .game-board-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    
+    .game-board {
+        max-width: 300px;
+        max-height: 300px;
+    }
+    
+    .instructions {
+        margin-bottom: 0;
+    }
+    
+    .leaderboard-section {
+        margin-bottom: 0;
+        height: fit-content;
+    }
+    
+    .leaderboard-content {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .game-board {
+        /* Prevent bounce scrolling */
+        overscroll-behavior: none;
+    }
+    
+    /* Fix viewport height on iOS */
+    .container {
+        min-height: -webkit-fill-available;
+    }
+}
+
+/* Android Chrome specific fixes */
+@media screen and (max-width: 768px) {
+    /* Prevent zoom on input focus */
+    input, select, textarea {
+        font-size: 16px;
+    }
+    
+    /* Improve scrolling performance */
+    .leaderboard-content {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .tile {
+        /* Sharper text rendering on high DPI */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
