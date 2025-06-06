@@ -37,7 +37,7 @@ func (m *Manager) GetVersion(filePath string) string {
 
 	// Generate version if not cached
 	version = m.generateVersion(filePath)
-	
+
 	m.mutex.Lock()
 	m.versions[filePath] = version
 	m.mutex.Unlock()
@@ -48,7 +48,7 @@ func (m *Manager) GetVersion(filePath string) string {
 // generateVersion creates a version string based on file modification time and content hash
 func (m *Manager) generateVersion(filePath string) string {
 	fullPath := filepath.Join(m.baseDir, filePath)
-	
+
 	// Get file info
 	info, err := os.Stat(fullPath)
 	if err != nil {
