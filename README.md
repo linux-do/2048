@@ -1,5 +1,7 @@
 # 2048 Game - H5 Implementation
 
+![GitHub Stars](https://img.shields.io/github/stars/linux-do/2048?style=social) ![GitHub Forks](https://img.shields.io/github/forks/linux-do/2048?style=social) ![GitHub Issues](https://img.shields.io/github/issues/linux-do/2048?style=flat-square) ![License](https://img.shields.io/github/license/linux-do/2048?style=flat-square)
+
 纯 Vibe coding 项目，演示效果：https://2048.linux.do
 
 A complete 2048 game implementation with client-server architecture, OAuth2 authentication, and leaderboards.
