@@ -17,6 +17,7 @@ type Database interface {
 
 	// Leaderboard operations
 	GetLeaderboard(leaderboardType models.LeaderboardType, limit int) ([]models.LeaderboardEntry, error)
+	GetLeaderboardByMode(leaderboardType models.LeaderboardType, gameMode models.GameMode, limit int) ([]models.LeaderboardEntry, error)
 
 	// Connection management
 	Close() error

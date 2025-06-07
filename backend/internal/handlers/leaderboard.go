@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"game2048/internal/cache"
 	"game2048/internal/database"
@@ -50,6 +49,18 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		return
 	}
 
+	// Get game mode from query parameter
+	gameModeStr := c.DefaultQuery("game_mode", "classic")
+	var gameMode models.GameMode
+	switch gameModeStr {
+	case "classic":
+		gameMode = models.GameModeClassic
+	case "challenge":
+		gameMode = models.GameModeChallenge
+	default:
+		gameMode = models.GameModeClassic
+	}
+
 	// Get limit from query parameter (default 100, max 100)
 	limitStr := c.DefaultQuery("limit", "100")
 	limit, err := strconv.Atoi(limitStr)
@@ -57,24 +68,12 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		limit = 100
 	}
 
-	// Try to get from cache first
+	// Try to get from cache first (for now, skip cache for game mode specific queries)
 	var entries []models.LeaderboardEntry
 
-	if h.cache != nil {
-		entries, err = h.cache.GetLeaderboard(lbType)
-		if err == nil {
-			// Cache hit, return cached data
-			response := models.LeaderboardResponse{
-				Type:     lbType,
-				Rankings: entries,
-			}
-			c.JSON(http.StatusOK, response)
-			return
-		}
-	}
-
-	// Cache miss or no cache, get from database
-	entries, err = h.db.GetLeaderboard(lbType, limit)
+	// For now, always get from database to support game mode filtering
+	// TODO: Update cache to support game mode keys
+	entries, err = h.db.GetLeaderboardByMode(lbType, gameMode, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get leaderboard",
@@ -82,14 +81,8 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		return
 	}
 
-	// Cache the result if cache is available
-	if h.cache != nil {
-		cacheTTL := 30 * time.Second // 30 seconds cache
-		if err := h.cache.SetLeaderboard(lbType, entries, cacheTTL); err != nil {
-			// Log error but don't fail the request
-			// log.Printf("Failed to cache leaderboard: %v", err)
-		}
-	}
+	// TODO: Cache the result if cache is available (update cache to support game modes)
+	// For now, skip caching for game mode specific queries
 
 	// Return response
 	response := models.LeaderboardResponse{

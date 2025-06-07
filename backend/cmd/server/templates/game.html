@@ -42,6 +42,20 @@
         </div>
     </div>
 
+    <!-- Game Mode Selector -->
+    <div class="game-mode-selector">
+        <div class="mode-buttons">
+            <button id="classic-mode-btn" class="mode-btn active" data-mode="classic">
+                <span class="mode-title">Classic</span>
+                <span class="mode-desc">Standard 2048 game</span>
+            </button>
+            <button id="challenge-mode-btn" class="mode-btn" data-mode="challenge">
+                <span class="mode-title">Challenge</span>
+                <span class="mode-desc">One cell disabled</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Game Board -->
     <div class="game-board-container">
         <canvas id="game-canvas" class="game-canvas"></canvas>
@@ -119,9 +133,27 @@
     // Global functions for UI
     function startNewGame() {
         if (window.canvasGame) {
-            window.canvasGame.newGame();
+            const selectedMode = document.querySelector('.mode-btn.active').dataset.mode;
+            window.canvasGame.newGame(selectedMode);
         }
     }
+
+    // Game mode selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const modeButtons = document.querySelectorAll('.mode-btn');
+
+        modeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                modeButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+
+                // Start new game with selected mode
+                startNewGame();
+            });
+        });
+    });
 </script>
 
 <style>
@@ -232,6 +264,51 @@
 
 .new-game-btn:hover {
     background: #776e65;
+}
+
+.game-mode-selector {
+    margin-bottom: 20px;
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.mode-btn {
+    background: #f8f8f8;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+}
+
+.mode-btn:hover {
+    border-color: #8f7a66;
+    background: #f0f0f0;
+}
+
+.mode-btn.active {
+    background: #8f7a66;
+    border-color: #8f7a66;
+    color: white;
+}
+
+.mode-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.mode-desc {
+    font-size: 0.8rem;
+    opacity: 0.8;
 }
 
 .game-board-container {
@@ -448,6 +525,24 @@
         right: 10px;
         padding: 6px 12px;
         font-size: 0.8rem;
+    }
+
+    .mode-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mode-btn {
+        min-width: auto;
+        padding: 10px 15px;
+    }
+
+    .mode-title {
+        font-size: 1rem;
+    }
+
+    .mode-desc {
+        font-size: 0.75rem;
     }
 }
 </style>

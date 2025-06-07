@@ -23,6 +23,19 @@
         </header>
 
         <div class="leaderboard-container">
+            <!-- Game Mode Selection -->
+            <div class="game-mode-tabs">
+                <button class="mode-tab-btn active" data-mode="classic" onclick="switchGameMode('classic')">
+                    <span class="mode-title">Classic</span>
+                    <span class="mode-desc">Standard 2048</span>
+                </button>
+                <button class="mode-tab-btn" data-mode="challenge" onclick="switchGameMode('challenge')">
+                    <span class="mode-title">Challenge</span>
+                    <span class="mode-desc">One cell disabled</span>
+                </button>
+            </div>
+
+            <!-- Time Period Selection -->
             <div class="leaderboard-tabs">
                 <button class="tab-btn active" data-type="daily" onclick="switchLeaderboard('daily')">Daily</button>
                 <button class="tab-btn" data-type="weekly" onclick="switchLeaderboard('weekly')">Weekly</button>
@@ -38,10 +51,26 @@
 
     <script>
         let currentType = 'daily';
+        let currentMode = 'classic';
         let cache = new Map();
 
         // Load initial leaderboard
         loadLeaderboard('daily');
+
+        function switchGameMode(mode) {
+            // Update active mode tab
+            document.querySelectorAll('.mode-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+            currentMode = mode;
+            // Clear cache when switching modes
+            cache.clear();
+
+            // Reload current leaderboard with new mode
+            loadLeaderboard(currentType);
+        }
 
         function switchLeaderboard(type) {
             // Update active tab
@@ -49,34 +78,37 @@
                 btn.classList.remove('active');
             });
             document.querySelector(`[data-type="${type}"]`).classList.add('active');
-            
+
             // Load leaderboard
             loadLeaderboard(type);
         }
 
         async function loadLeaderboard(type) {
             currentType = type;
-            
+
+            // Create cache key that includes both type and mode
+            const cacheKey = `${type}_${currentMode}`;
+
             // Check cache first
-            if (cache.has(type)) {
-                displayLeaderboard(cache.get(type));
+            if (cache.has(cacheKey)) {
+                displayLeaderboard(cache.get(cacheKey));
                 return;
             }
-            
+
             // Show loading state
             showLoading();
-            
+
             try {
-                const response = await fetch(`/api/public/leaderboard?type=${type}&limit=50`);
+                const response = await fetch(`/api/public/leaderboard?type=${type}&game_mode=${currentMode}&limit=50`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch leaderboard');
                 }
-                
+
                 const data = await response.json();
-                
+
                 // Cache the data
-                cache.set(type, data);
-                
+                cache.set(cacheKey, data);
+
                 // Display the leaderboard
                 displayLeaderboard(data);
             } catch (error) {
@@ -190,6 +222,53 @@
             max-width: 800px;
             margin: 40px auto;
             padding: 0 20px;
+        }
+
+        .game-mode-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .mode-tab-btn {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 140px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .mode-tab-btn:hover {
+            border-color: #8f7a66;
+            background: #f8f8f8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .mode-tab-btn.active {
+            background: #8f7a66;
+            border-color: #8f7a66;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .mode-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .mode-desc {
+            font-size: 0.85rem;
+            opacity: 0.8;
         }
 
         .leaderboard-tabs {
@@ -326,11 +405,21 @@
             .page-title {
                 font-size: 2rem;
             }
-            
+
+            .game-mode-tabs {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .mode-tab-btn {
+                min-width: auto;
+                padding: 12px 20px;
+            }
+
             .leaderboard-tabs {
                 flex-wrap: wrap;
             }
-            
+
             .tab-btn {
                 flex: 1 1 50%;
             }

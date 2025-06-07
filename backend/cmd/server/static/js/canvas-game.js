@@ -9,6 +9,8 @@ class CanvasGame {
         this.score = 0;
         this.victory = false;
         this.gameOver = false;
+        this.gameMode = 'classic';
+        this.disabledCell = null;
 
         // Canvas settings
         this.setupCanvas();
@@ -17,6 +19,7 @@ class CanvasGame {
         this.colors = {
             background: '#faf8ef',
             empty: 'rgba(238, 228, 218, 0.35)',
+            disabled: 'rgba(119, 110, 101, 0.3)',
             text: '#776e65',
             textLight: '#f9f6f2',
             tiles: {
@@ -193,6 +196,8 @@ class CanvasGame {
         this.score = gameState.score;
         this.victory = gameState.victory;
         this.gameOver = gameState.game_over;
+        this.gameMode = gameState.game_mode || 'classic';
+        this.disabledCell = gameState.disabled_cell || null;
 
         // Update score display
         const scoreElement = document.getElementById('score');
@@ -311,6 +316,11 @@ class CanvasGame {
             }
         }
 
+        // Draw disabled cell overlay if in challenge mode
+        if (this.gameMode === 'challenge' && this.disabledCell) {
+            this.drawDisabledCell(this.disabledCell.row, this.disabledCell.col);
+        }
+
         // Draw tiles with values (skip animated tiles)
         for (let row = 0; row < 4; row++) {
             for (let col = 0; col < 4; col++) {
@@ -402,6 +412,30 @@ class CanvasGame {
         this.ctx.fill();
     }
 
+    drawDisabledCell(row, col) {
+        const x = this.padding + col * (this.tileSize + this.gap);
+        const y = this.padding + row * (this.tileSize + this.gap);
+
+        // Draw disabled cell overlay
+        this.ctx.fillStyle = this.colors.disabled;
+        const borderRadius = Math.min(this.tileSize * 0.1, 6);
+        this.drawRoundedRect(x, y, this.tileSize, this.tileSize, borderRadius);
+        this.ctx.fill();
+
+        // Draw X pattern to indicate disabled
+        this.ctx.strokeStyle = '#776e65';
+        this.ctx.lineWidth = 3;
+        this.ctx.lineCap = 'round';
+
+        const margin = this.tileSize * 0.25;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + margin, y + margin);
+        this.ctx.lineTo(x + this.tileSize - margin, y + this.tileSize - margin);
+        this.ctx.moveTo(x + this.tileSize - margin, y + margin);
+        this.ctx.lineTo(x + margin, y + this.tileSize - margin);
+        this.ctx.stroke();
+    }
+
     drawTile(row, col, value, scale = 1, opacity = 1, offsetX = 0, offsetY = 0) {
         const x = this.padding + col * (this.tileSize + this.gap) + offsetX;
         const y = this.padding + row * (this.tileSize + this.gap) + offsetY;
@@ -488,12 +522,14 @@ class CanvasGame {
         }
     }
     
-    newGame() {
+    newGame(gameMode = 'classic') {
         this.hideGameOverlay();
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
                 type: 'new_game',
-                data: {}
+                data: {
+                    game_mode: gameMode
+                }
             }));
         }
     }
