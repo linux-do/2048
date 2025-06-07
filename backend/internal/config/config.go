@@ -18,6 +18,7 @@ type Config struct {
 	OAuth2      OAuth2Config
 	Game        GameConfig
 	Leaderboard LeaderboardConfig
+	I18n        I18nConfig
 }
 
 // ServerConfig holds server-related configuration
@@ -83,6 +84,12 @@ type GameConfig struct {
 type LeaderboardConfig struct {
 	CacheTTL   int
 	MaxEntries int
+}
+
+// I18nConfig holds internationalization configuration
+type I18nConfig struct {
+	DefaultLanguage   string
+	SupportedLanguages []string
 }
 
 // Load loads configuration from environment variables
@@ -160,6 +167,10 @@ func Load() (*Config, error) {
 		Leaderboard: LeaderboardConfig{
 			CacheTTL:   getEnvInt("LEADERBOARD_CACHE_TTL", 300),
 			MaxEntries: getEnvInt("MAX_LEADERBOARD_ENTRIES", 100),
+		},
+		I18n: I18nConfig{
+			DefaultLanguage:    getEnv("DEFAULT_LANGUAGE", "en"),
+			SupportedLanguages: getEnvSlice("SUPPORTED_LANGUAGES", []string{"en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "ru"}),
 		},
 	}
 

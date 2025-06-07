@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{currentLang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,30 +8,30 @@
     <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
 
     <meta name="theme-color" content="#faf8ef">
-    <meta name="description" content="2048 Game Leaderboards - See the top players!">
+    <meta name="description" content="{{t "leaderboard.subtitle"}}">
 </head>
 <body>
     <div class="leaderboard-page">
         <header class="page-header">
             <div class="header-content">
-                <h1 class="page-title">🏆 2048 Leaderboards</h1>
-                <p class="page-subtitle">Top players who merged two 8192 tiles!</p>
+                <h1 class="page-title">{{t "leaderboard.title"}}</h1>
+                <p class="page-subtitle">{{t "leaderboard.subtitle"}}</p>
                 <div class="header-actions">
-                    <a href="/" class="btn btn-primary">Play Game</a>
+                    <a href="/" class="btn btn-primary">{{t "leaderboard.play_game"}}</a>
                 </div>
             </div>
         </header>
 
         <div class="leaderboard-container">
             <div class="leaderboard-tabs">
-                <button class="tab-btn active" data-type="daily" onclick="switchLeaderboard('daily')">Daily</button>
-                <button class="tab-btn" data-type="weekly" onclick="switchLeaderboard('weekly')">Weekly</button>
-                <button class="tab-btn" data-type="monthly" onclick="switchLeaderboard('monthly')">Monthly</button>
-                <button class="tab-btn" data-type="all" onclick="switchLeaderboard('all')">All Time</button>
+                <button class="tab-btn active" data-type="daily" onclick="switchLeaderboard('daily')">{{t "leaderboard.daily"}}</button>
+                <button class="tab-btn" data-type="weekly" onclick="switchLeaderboard('weekly')">{{t "leaderboard.weekly"}}</button>
+                <button class="tab-btn" data-type="monthly" onclick="switchLeaderboard('monthly')">{{t "leaderboard.monthly"}}</button>
+                <button class="tab-btn" data-type="all" onclick="switchLeaderboard('all')">{{t "leaderboard.all_time"}}</button>
             </div>
             
             <div class="leaderboard-content" id="leaderboard-content">
-                <div class="loading">Loading leaderboard...</div>
+                <div class="loading">{{t "leaderboard.loading"}}</div>
             </div>
         </div>
     </div>
@@ -87,19 +87,21 @@
 
         function showLoading() {
             const content = document.getElementById('leaderboard-content');
-            content.innerHTML = '<div class="loading">Loading leaderboard...</div>';
+            content.innerHTML = '<div class="loading">' + (window.i18n ? i18n.t('leaderboard.loading') : 'Loading leaderboard...') + '</div>';
         }
 
         function showError(message) {
             const content = document.getElementById('leaderboard-content');
-            content.innerHTML = `<div class="error">${message}</div>`;
+            const errorMsg = window.i18n ? i18n.t('leaderboard.failed_to_load') : message;
+            content.innerHTML = `<div class="error">${errorMsg}</div>`;
         }
 
         function displayLeaderboard(data) {
             const content = document.getElementById('leaderboard-content');
             
             if (!data.rankings || data.rankings.length === 0) {
-                content.innerHTML = '<div class="empty">No games played yet. Be the first!</div>';
+                const emptyMsg = window.i18n ? i18n.t('leaderboard.no_games') : 'No games played yet. Be the first!';
+                content.innerHTML = `<div class="empty">${emptyMsg}</div>`;
                 return;
             }
             
@@ -352,6 +354,56 @@
                 font-size: 1.1rem;
             }
         }
+
+        .language-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .language-selector select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            color: #333;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .language-selector select:hover {
+            border-color: #4285F4;
+        }
+
+        .language-selector select:focus {
+            outline: none;
+            border-color: #4285F4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
     </style>
+
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <select id="languageSelect" onchange="switchLanguage(this.value)">
+            <option value="en" {{if eq (currentLang) "en"}}selected{{end}}>English</option>
+            <option value="zh-CN" {{if eq (currentLang) "zh-CN"}}selected{{end}}>简体中文</option>
+            <option value="zh-TW" {{if eq (currentLang) "zh-TW"}}selected{{end}}>繁體中文</option>
+            <option value="ja" {{if eq (currentLang) "ja"}}selected{{end}}>日本語</option>
+            <option value="ko" {{if eq (currentLang) "ko"}}selected{{end}}>한국어</option>
+            <option value="es" {{if eq (currentLang) "es"}}selected{{end}}>Español</option>
+            <option value="fr" {{if eq (currentLang) "fr"}}selected{{end}}>Français</option>
+            <option value="de" {{if eq (currentLang) "de"}}selected{{end}}>Deutsch</option>
+            <option value="ru" {{if eq (currentLang) "ru"}}selected{{end}}>Русский</option>
+        </select>
+    </div>
+
+    <script src="{{static "/js/i18n.js"}}"></script>
+    <script>
+        function switchLanguage(lang) {
+            window.location.href = '/lang/' + lang + '?redirect=' + encodeURIComponent(window.location.pathname);
+        }
+    </script>
 </body>
 </html>

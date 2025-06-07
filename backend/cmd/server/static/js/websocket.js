@@ -48,7 +48,7 @@ class GameWebSocket {
             const token = localStorage.getItem('auth_token') || this.getCookie('auth_token');
             if (!token) {
                 console.error('No auth token found');
-                this.updateConnectionStatus('disconnected', 'Not authenticated');
+                this.updateConnectionStatus('disconnected', window.i18n ? window.i18n.t('websocket.not_authenticated') : 'Not authenticated');
                 return;
             }
             
@@ -57,12 +57,12 @@ class GameWebSocket {
             const wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`;
             
             this.ws = new WebSocket(wsUrl);
-            this.updateConnectionStatus('connecting', 'Connecting...');
+            this.updateConnectionStatus('connecting', window.i18n ? window.i18n.t('game.connecting') : 'Connecting...');
             
             this.ws.onopen = () => {
                 console.log('WebSocket connected');
                 this.reconnectAttempts = 0;
-                this.updateConnectionStatus('connected', 'Connected');
+                this.updateConnectionStatus('connected', window.i18n ? window.i18n.t('game.connected') : 'Connected');
             };
             
             this.ws.onmessage = (event) => {
@@ -76,7 +76,7 @@ class GameWebSocket {
             
             this.ws.onclose = (event) => {
                 console.log('WebSocket disconnected:', event.code, event.reason);
-                this.updateConnectionStatus('disconnected', 'Disconnected');
+                this.updateConnectionStatus('disconnected', window.i18n ? window.i18n.t('game.disconnected') : 'Disconnected');
                 
                 // Attempt to reconnect
                 if (this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -88,19 +88,19 @@ class GameWebSocket {
                         this.connect();
                     }, delay);
                 } else {
-                    this.updateConnectionStatus('disconnected', 'Connection failed');
-                    this.showError('Connection lost. Please refresh the page.');
+                    this.updateConnectionStatus('disconnected', window.i18n ? window.i18n.t('websocket.connection_failed') : 'Connection failed');
+                    this.showError(window.i18n ? window.i18n.t('websocket.connection_lost') : 'Connection lost. Please refresh the page.');
                 }
             };
             
             this.ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                this.updateConnectionStatus('disconnected', 'Connection error');
+                this.updateConnectionStatus('disconnected', window.i18n ? window.i18n.t('websocket.connection_error') : 'Connection error');
             };
             
         } catch (error) {
             console.error('Failed to create WebSocket connection:', error);
-            this.updateConnectionStatus('disconnected', 'Connection failed');
+            this.updateConnectionStatus('disconnected', window.i18n ? window.i18n.t('websocket.connection_failed') : 'Connection failed');
         }
     }
     
@@ -120,7 +120,7 @@ class GameWebSocket {
             this.ws.send(JSON.stringify(message));
         } else {
             console.error('WebSocket not connected');
-            this.showError('Not connected to server');
+            this.showError(window.i18n ? window.i18n.t('websocket.not_connected') : 'Not connected to server');
         }
     }
     

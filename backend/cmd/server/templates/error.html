@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{currentLang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error - 2048 Game</title>
+    <title>{{t "error.title"}}</title>
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -101,31 +101,80 @@
                 width: 100%;
             }
         }
+
+        .language-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .language-selector select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            color: #333;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .language-selector select:hover {
+            border-color: #4285F4;
+        }
+
+        .language-selector select:focus {
+            outline: none;
+            border-color: #4285F4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
     </style>
 </head>
 <body>
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <select id="languageSelect" onchange="switchLanguage(this.value)">
+            <option value="en" {{if eq (currentLang) "en"}}selected{{end}}>English</option>
+            <option value="zh-CN" {{if eq (currentLang) "zh-CN"}}selected{{end}}>简体中文</option>
+            <option value="zh-TW" {{if eq (currentLang) "zh-TW"}}selected{{end}}>繁體中文</option>
+            <option value="ja" {{if eq (currentLang) "ja"}}selected{{end}}>日本語</option>
+            <option value="ko" {{if eq (currentLang) "ko"}}selected{{end}}>한국어</option>
+            <option value="es" {{if eq (currentLang) "es"}}selected{{end}}>Español</option>
+            <option value="fr" {{if eq (currentLang) "fr"}}selected{{end}}>Français</option>
+            <option value="de" {{if eq (currentLang) "de"}}selected{{end}}>Deutsch</option>
+            <option value="ru" {{if eq (currentLang) "ru"}}selected{{end}}>Русский</option>
+        </select>
+    </div>
     <div class="error-container">
         <div class="error-icon">❌</div>
-        <h1>Oops! Something went wrong</h1>
+        <h1>{{t "error.something_wrong"}}</h1>
         
         <div class="error-message">
-            {{.error}}
+            {{if .error}}{{.error}}{{else}}{{t "error.default_message"}}{{end}}
         </div>
         
         <div class="error-actions">
-            <a href="/" class="btn">Go Home</a>
-            <button onclick="history.back()" class="btn btn-secondary">Go Back</button>
+            <a href="/" class="btn">{{t "error.go_home"}}</a>
+            <button onclick="history.back()" class="btn btn-secondary">{{t "error.go_back"}}</button>
         </div>
         
         <div class="error-details">
-            <p>If this problem persists, please try:</p>
+            <p>{{t "error.try_solutions"}}</p>
             <ul style="text-align: left; display: inline-block;">
-                <li>Refreshing the page</li>
-                <li>Clearing your browser cache</li>
-                <li>Checking your internet connection</li>
-                <li>Trying again in a few minutes</li>
+                <li>{{t "error.refresh_page"}}</li>
+                <li>{{t "error.clear_cache"}}</li>
+                <li>{{t "error.check_connection"}}</li>
+                <li>{{t "error.try_later"}}</li>
             </ul>
         </div>
     </div>
+
+    <script src="{{static "/js/i18n.js"}}"></script>
+    <script>
+        function switchLanguage(lang) {
+            window.location.href = '/lang/' + lang + '?redirect=' + encodeURIComponent(window.location.pathname);
+        }
+    </script>
 </body>
 </html>
