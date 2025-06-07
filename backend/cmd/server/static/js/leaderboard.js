@@ -43,8 +43,8 @@ class Leaderboard {
         if (!data.rankings || data.rankings.length === 0) {
             content.innerHTML = `
                 <div class="empty-leaderboard">
-                    <p>No scores yet for ${data.type} leaderboard.</p>
-                    <p>Be the first to set a score!</p>
+                    <p>${window.i18n ? window.i18n.t('leaderboard.no_scores').replace('%s', data.type) : `No scores yet for ${data.type} leaderboard.`}</p>
+                    <p>${window.i18n ? window.i18n.t('leaderboard.be_first') : 'Be the first to set a score!'}</p>
                 </div>
             `;
             return;
@@ -72,7 +72,7 @@ class Leaderboard {
                 <div class="user-info">
                     ${entry.user_avatar ? `<img src="${entry.user_avatar}" alt="${entry.user_name}" class="user-avatar">` : ''}
                     <span class="user-name">${this.escapeHtml(entry.user_name)}</span>
-                    ${isCurrentUser ? '<span class="you-badge">You</span>' : ''}
+                    ${isCurrentUser ? `<span class="you-badge">${window.i18n ? window.i18n.t('leaderboard.you') : 'You'}</span>` : ''}
                 </div>
                 <div class="score">
                     ${entry.score.toLocaleString()}
@@ -100,7 +100,7 @@ class Leaderboard {
             content.innerHTML = `
                 <div class="loading">
                     <div class="loading-spinner"></div>
-                    <p>Loading leaderboard...</p>
+                    <p>${window.i18n ? window.i18n.t('leaderboard.loading') : 'Loading leaderboard...'}</p>
                 </div>
             `;
         }

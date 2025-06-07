@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{currentLang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,19 +8,19 @@
     <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
 
     <meta name="theme-color" content="#faf8ef">
-    <meta name="description" content="Play 2048 - Merge two 8192 tiles to win!">
+    <meta name="description" content="{{t "game.description"}}">
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
             <div class="game-logo">
                 <h1>2048</h1>
-                <p>Merge two 8192 tiles to win!</p>
+                <p>{{t "game.subtitle"}}</p>
             </div>
 
             <div class="login-content">
-                <h2>Welcome to 2048</h2>
-                <p>Sign in to save your progress and compete on the leaderboards</p>
+                <h2>{{t "auth.welcome"}}</h2>
+                <p>{{t "auth.sign_in_description"}}</p>
 
                 <div class="login-buttons">
                     <a href="/auth/login" class="login-btn">
@@ -34,32 +34,47 @@
                             <rect fill="#f0f0f0" clip-path="url(#a)" x="10" y="40" width="100" height="40"/>
                             <rect fill="#ffb003" clip-path="url(#a)" x="10" y="80" width="100" height="30"/>
                         </svg>
-                        Sign in with LINUX DO
+                        {{t "auth.sign_in_with"}}
                     </a>
                 </div>
 
                 <div class="public-links">
                     <a href="/leaderboard" class="leaderboard-link">
-                        🏆 View Leaderboards
+                        {{t "game.view_leaderboards"}}
                     </a>
                 </div>
 
                 <div class="features">
                     <div class="feature">
-                        <h3>🏆 Leaderboards</h3>
-                        <p>Compete with players worldwide</p>
+                        <h3>{{t "features.leaderboards"}}</h3>
+                        <p>{{t "features.leaderboards_desc"}}</p>
                     </div>
                     <div class="feature">
-                        <h3>💾 Save Progress</h3>
-                        <p>Continue your games across devices</p>
+                        <h3>{{t "features.save_progress"}}</h3>
+                        <p>{{t "features.save_progress_desc"}}</p>
                     </div>
                     <div class="feature">
-                        <h3>📱 Mobile Friendly</h3>
-                        <p>Play anywhere, anytime</p>
+                        <h3>{{t "features.mobile_friendly"}}</h3>
+                        <p>{{t "features.mobile_friendly_desc"}}</p>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <select id="languageSelect" onchange="switchLanguage(this.value)">
+            <option value="en" {{if eq (currentLang) "en"}}selected{{end}}>English</option>
+            <option value="zh-CN" {{if eq (currentLang) "zh-CN"}}selected{{end}}>简体中文</option>
+            <option value="zh-TW" {{if eq (currentLang) "zh-TW"}}selected{{end}}>繁體中文</option>
+            <option value="ja" {{if eq (currentLang) "ja"}}selected{{end}}>日本語</option>
+            <option value="ko" {{if eq (currentLang) "ko"}}selected{{end}}>한국어</option>
+            <option value="es" {{if eq (currentLang) "es"}}selected{{end}}>Español</option>
+            <option value="fr" {{if eq (currentLang) "fr"}}selected{{end}}>Français</option>
+            <option value="de" {{if eq (currentLang) "de"}}selected{{end}}>Deutsch</option>
+            <option value="ru" {{if eq (currentLang) "ru"}}selected{{end}}>Русский</option>
+        </select>
     </div>
 
 <style>
@@ -185,7 +200,41 @@
         font-size: 3rem;
     }
 }
+
+.language-selector {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.language-selector select {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.language-selector select:hover {
+    border-color: #4285F4;
+}
+
+.language-selector select:focus {
+    outline: none;
+    border-color: #4285F4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
 </style>
     <script src="{{static "/js/main.js"}}"></script>
+    <script src="{{static "/js/i18n.js"}}"></script>
+    <script>
+        function switchLanguage(lang) {
+            window.location.href = '/lang/' + lang + '?redirect=' + encodeURIComponent(window.location.pathname);
+        }
+    </script>
 </body>
 </html>

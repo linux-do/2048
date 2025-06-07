@@ -115,13 +115,13 @@
                 return;
             }
             
-            showGlobalError('An unexpected error occurred. Please refresh the page.');
+            showGlobalError(window.i18n ? window.i18n.t('errors.unexpected_error') : 'An unexpected error occurred. Please refresh the page.');
         });
         
         // Unhandled promise rejection handler
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            showGlobalError('A network error occurred. Please check your connection.');
+            showGlobalError(window.i18n ? window.i18n.t('errors.network_error') : 'A network error occurred. Please check your connection.');
         });
     }
     
@@ -200,10 +200,10 @@
         
         errorDiv.innerHTML = `
             <div style="text-align: center; padding: 40px; background: white; color: #333; border-radius: 10px; max-width: 400px;">
-                <h2>Initialization Failed</h2>
-                <p>The game failed to load properly. Please refresh the page to try again.</p>
+                <h2>${window.i18n ? window.i18n.t('errors.initialization_failed') : 'Initialization Failed'}</h2>
+                <p>${window.i18n ? window.i18n.t('errors.game_load_failed') : 'The game failed to load properly. Please refresh the page to try again.'}</p>
                 <button onclick="window.location.reload()" style="background: #8f7a66; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    Refresh Page
+                    ${window.i18n ? window.i18n.t('errors.refresh_page') : 'Refresh Page'}
                 </button>
             </div>
         `;

@@ -32,11 +32,11 @@ class Auth {
                 window.location.href = '/';
             } else {
                 console.error('Logout failed');
-                this.showError('Failed to logout');
+                this.showError(window.i18n ? window.i18n.t('auth.logout_failed') : 'Failed to logout');
             }
         } catch (error) {
             console.error('Logout error:', error);
-            this.showError('Network error during logout');
+            this.showError(window.i18n ? window.i18n.t('auth.logout_network_error') : 'Network error during logout');
         }
     }
     

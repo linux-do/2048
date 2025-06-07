@@ -471,10 +471,10 @@ class CanvasGame {
         
         if (overlay && message) {
             if (this.victory) {
-                message.textContent = '🎉 You Win! You merged two 8192 tiles!';
+                message.textContent = window.i18n ? window.i18n.t('game.victory_message') : '🎉 You Win! You merged two 8192 tiles!';
                 overlay.className = 'game-overlay victory';
             } else {
-                message.textContent = '😔 Game Over! No more moves available.';
+                message.textContent = window.i18n ? window.i18n.t('game.game_over_message') : '😔 Game Over! No more moves available.';
                 overlay.className = 'game-overlay game-over';
             }
             overlay.style.display = 'flex';

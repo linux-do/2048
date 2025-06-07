@@ -13,6 +13,7 @@ import (
 	"game2048/internal/database"
 	"game2048/internal/game"
 	"game2048/internal/handlers"
+	"game2048/internal/i18n"
 	"game2048/internal/version"
 	"game2048/internal/websocket"
 
@@ -78,8 +79,11 @@ func main() {
 	// Initialize version manager for static files
 	versionManager := version.NewManager("cmd/server/static")
 
+	// Initialize i18n
+	i18nManager := i18n.New(cfg.I18n.DefaultLanguage)
+
 	// Initialize handlers
-	authHandler := handlers.NewAuthHandler(authService, db)
+	authHandler := handlers.NewAuthHandler(authService, db, i18nManager)
 	leaderboardHandler := handlers.NewLeaderboardHandler(db, redisCache)
 
 	// Create Gin router
@@ -92,21 +96,34 @@ func main() {
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	router.Use(cors.New(corsConfig))
 
+	// Use i18n middleware
+	router.Use(i18n.Middleware(i18nManager))
+
 	// Create template functions
-	funcMap := template.FuncMap{
-		"static": func(path string) string {
-			// In development mode, refresh version on each request
-			if !cfg.Server.StaticFilesEmbedded {
-				versionManager.RefreshVersion(path)
-			}
-			return versionManager.GetVersionedURL("/static" + path)
-		},
+	createTemplateFuncs := func(lang string) template.FuncMap {
+		funcMap := template.FuncMap{
+			"static": func(path string) string {
+				// In development mode, refresh version on each request
+				if !cfg.Server.StaticFilesEmbedded {
+					versionManager.RefreshVersion(path)
+				}
+				return versionManager.GetVersionedURL("/static" + path)
+			},
+		}
+		
+		// Add i18n functions
+		i18nFuncs := i18nManager.TemplateFuncMap(lang)
+		for k, v := range i18nFuncs {
+			funcMap[k] = v
+		}
+		
+		return funcMap
 	}
 
 	// Load HTML templates
 	if cfg.Server.StaticFilesEmbedded {
 		// Load embedded templates with custom functions
-		tmpl := template.Must(template.New("").Funcs(funcMap).ParseFS(templateFiles, "templates/*.html"))
+		tmpl := template.Must(template.New("").Funcs(createTemplateFuncs("en")).ParseFS(templateFiles, "templates/*.html"))
 		router.SetHTMLTemplate(tmpl)
 
 		// Serve embedded static files - need to use sub filesystem to strip the "static" prefix
@@ -117,7 +134,7 @@ func main() {
 		router.StaticFS("/static", http.FS(staticFS))
 	} else {
 		// Load templates from file system (development mode) with custom functions
-		tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("cmd/server/templates/*.html"))
+		tmpl := template.Must(template.New("").Funcs(createTemplateFuncs("en")).ParseGlob("cmd/server/templates/*.html"))
 		router.SetHTMLTemplate(tmpl)
 		router.Static("/static", "cmd/server/static")
 	}
@@ -132,6 +149,76 @@ func main() {
 		})
 	}
 
+	// Language switching route
+	router.GET("/lang/:lang", i18n.SetLanguage(i18nManager))
+
+	// API endpoint for getting supported languages
+	router.GET("/api/languages", func(c *gin.Context) {
+		languages := make([]gin.H, 0)
+		for _, lang := range i18nManager.GetSupportedLanguages() {
+			languages = append(languages, gin.H{
+				"code": lang,
+				"name": i18nManager.GetLanguageName(lang),
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"languages": languages,
+		})
+	})
+
+	// API endpoint for getting translations for client-side use
+	router.GET("/api/translations/:lang", func(c *gin.Context) {
+		lang := c.Param("lang")
+		
+		// Validate language
+		supported := false
+		for _, supportedLang := range i18nManager.GetSupportedLanguages() {
+			if supportedLang == lang {
+				supported = true
+				break
+			}
+		}
+		
+		if !supported {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported language"})
+			return
+		}
+		
+		// Get client-side translations (only keys needed by JavaScript)
+		clientKeys := []string{
+			"game.victory_message",
+			"game.game_over_message",
+			"game.connecting",
+			"game.connected", 
+			"game.disconnected",
+			"websocket.not_authenticated",
+			"websocket.connection_failed",
+			"websocket.connection_lost",
+			"websocket.not_connected",
+			"websocket.connection_error",
+			"errors.initialization_failed",
+			"errors.game_load_failed",
+			"errors.refresh_page",
+			"errors.unexpected_error",
+			"errors.network_error",
+			"leaderboard.loading",
+			"leaderboard.no_scores",
+			"leaderboard.be_first",
+			"leaderboard.failed_to_load",
+			"common.loading",
+		}
+		
+		translations := make(map[string]string)
+		for _, key := range clientKeys {
+			translations[key] = i18nManager.T(lang, key)
+		}
+		
+		c.JSON(http.StatusOK, gin.H{
+			"language": lang,
+			"translations": translations,
+		})
+	})
+
 	// Authentication routes
 	authRoutes := router.Group("/auth")
 	{
@@ -143,8 +230,10 @@ func main() {
 
 	// Public pages
 	router.GET("/leaderboard", func(c *gin.Context) {
+		lang := i18n.GetLanguage(c)
 		c.HTML(http.StatusOK, "leaderboard.html", gin.H{
-			"title": "2048 Game - Leaderboards",
+			"title": i18nManager.T(lang, "leaderboard.title"),
+			"lang":  lang,
 		})
 	})
 
@@ -170,11 +259,13 @@ func main() {
 
 	// Serve the main game page
 	router.GET("/", authHandler.OptionalAuthMiddleware(), func(c *gin.Context) {
+		lang := i18n.GetLanguage(c)
 		userID, exists := c.Get("user_id")
 		if !exists {
 			// User not authenticated, show login page
 			c.HTML(http.StatusOK, "login.html", gin.H{
-				"title": "2048 Game - Login",
+				"title": i18nManager.T(lang, "game.title"),
+				"lang":  lang,
 			})
 			return
 		}
@@ -184,14 +275,16 @@ func main() {
 		if err != nil {
 			log.Printf("Failed to get user: %v", err)
 			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"error": "Failed to load user data",
+				"error": i18nManager.T(lang, "error.something_wrong"),
+				"lang":  lang,
 			})
 			return
 		}
 
 		c.HTML(http.StatusOK, "game.html", gin.H{
-			"title": "2048 Game",
+			"title": i18nManager.T(lang, "game.title"),
 			"user":  user,
+			"lang":  lang,
 		})
 	})
 

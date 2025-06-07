@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{currentLang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.title}}</title>
+    <title>{{t "game.title"}}</title>
     <link rel="stylesheet" href="{{static "/css/main.css"}}">
     <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
 
     <meta name="theme-color" content="#faf8ef">
-    <meta name="description" content="Play 2048 - Merge two 8192 tiles to win!">
+    <meta name="description" content="{{t "game.description"}}">
 </head>
 <body>
     <div class="game-container">
         <!-- Header -->
         <header class="game-header">
             <div class="header-left">
-                <h1 class="game-title">2048</h1>
-                <p class="game-subtitle">Merge two 8192 tiles to win!</p>
+                <h1 class="game-title">{{t "game.title"}}</h1>
+                <p class="game-subtitle">{{t "game.subtitle"}}</p>
             </div>
             <div class="header-right">
                 <div class="user-info">
@@ -24,7 +24,7 @@
                     <img src="{{.user.Avatar}}" alt="{{.user.Name}}" class="user-avatar"/>
                     {{end}}
                     <span class="user-name">{{.user.Name}}</span>
-                    <button class="logout-btn" onclick="logout()">Logout</button>
+                    <button class="logout-btn" onclick="logout()">{{t "game.logout"}}</button>
                 </div>
             </div>
         </header>
@@ -33,12 +33,12 @@
     <div class="game-info">
         <div class="score-container">
             <div class="score-box">
-                <div class="score-label">Score</div>
+                <div class="score-label">{{t "game.score"}}</div>
                 <div class="score-value" id="score">0</div>
             </div>
         </div>
         <div class="game-controls">
-            <button class="new-game-btn" onclick="startNewGame()">New Game</button>
+            <button class="new-game-btn" onclick="startNewGame()">{{t "game.new_game"}}</button>
         </div>
     </div>
 
@@ -48,21 +48,29 @@
         <div class="game-overlay" id="game-overlay" style="display: none;">
             <div class="overlay-content">
                 <div class="overlay-message" id="overlay-message"></div>
-                <button class="overlay-btn" onclick="startNewGame()">Try Again</button>
+                <button class="overlay-btn" onclick="startNewGame()">{{t "game.try_again"}}</button>
             </div>
         </div>
     </div>
 
     <!-- Instructions -->
     <div class="instructions">
-        <p><strong>How to play:</strong> Use arrow keys or swipe to move tiles. When two tiles with the same number touch, they merge into one!</p>
-        <p><a href="/leaderboard" class="leaderboard-link">🏆 View Leaderboards</a></p>
+        <p><strong>{{t "game.how_to_play"}}</strong> {{t "game.instructions"}}</p>
+        <p><a href="/leaderboard" class="leaderboard-link">{{t "game.view_leaderboards"}}</a></p>
+    </div>
+
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <label for="language-select">{{t "common.language"}}:</label>
+        <select id="language-select" onchange="changeLanguage(this.value)">
+            <!-- Will be populated by JavaScript -->
+        </select>
     </div>
 
     <!-- Connection Status -->
     <div class="connection-status" id="connection-status">
         <span class="status-indicator" id="status-indicator"></span>
-        <span class="status-text" id="status-text">Connecting...</span>
+        <span class="status-text" id="status-text">{{t "game.connecting"}}</span>
     </div>
 </div>
 

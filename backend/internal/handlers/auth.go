@@ -5,6 +5,7 @@ import (
 
 	"game2048/internal/auth"
 	"game2048/internal/database"
+	"game2048/internal/i18n"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,13 +14,15 @@ import (
 type AuthHandler struct {
 	authService *auth.AuthService
 	db          database.Database
+	i18n        *i18n.I18n
 }
 
 // NewAuthHandler creates a new authentication handler
-func NewAuthHandler(authService *auth.AuthService, db database.Database) *AuthHandler {
+func NewAuthHandler(authService *auth.AuthService, db database.Database, i18nManager *i18n.I18n) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 		db:          db,
+		i18n:        i18nManager,
 	}
 }
 
@@ -38,6 +41,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 // Callback handles the OAuth2 callback
 func (h *AuthHandler) Callback(c *gin.Context) {
+	lang := i18n.GetLanguage(c)
 	code := c.Query("code")
 	state := c.Query("state")
 	errorParam := c.Query("error")
@@ -45,14 +49,16 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	// Check for OAuth2 errors
 	if errorParam != "" {
 		c.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"error": "OAuth2 authentication failed: " + errorParam,
+			"error": h.i18n.Tf(lang, "error.something_wrong") + ": " + errorParam,
+			"lang":  lang,
 		})
 		return
 	}
 
 	if code == "" || state == "" {
 		c.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"error": "Missing required parameters",
+			"error": h.i18n.T(lang, "error.something_wrong"),
+			"lang":  lang,
 		})
 		return
 	}
@@ -61,7 +67,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	user, token, err := h.authService.HandleCallback(c.Request.Context(), code, state)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"error": "Authentication failed: " + err.Error(),
+			"error": h.i18n.T(lang, "error.something_wrong"),
+			"lang":  lang,
 		})
 		return
 	}
@@ -72,7 +79,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		// User doesn't exist, create new user
 		if err := h.db.CreateUser(user); err != nil {
 			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"error": "Failed to create user account",
+				"error": h.i18n.T(lang, "error.something_wrong"),
+				"lang":  lang,
 			})
 			return
 		}
@@ -82,7 +90,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		user.CreatedAt = existingUser.CreatedAt
 		if err := h.db.CreateUser(user); err != nil {
 			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"error": "Failed to update user account",
+				"error": h.i18n.T(lang, "error.something_wrong"),
+				"lang":  lang,
 			})
 			return
 		}
@@ -92,7 +101,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	token, err = h.authService.GenerateJWT(user.ID)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"error": "Failed to generate authentication token",
+			"error": h.i18n.T(lang, "error.something_wrong"),
+			"lang":  lang,
 		})
 		return
 	}
@@ -112,6 +122,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	c.HTML(http.StatusOK, "login_success.html", gin.H{
 		"user":  user,
 		"token": token,
+		"lang":  i18n.GetLanguage(c),
 	})
 }
 
