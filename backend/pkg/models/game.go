@@ -16,16 +16,32 @@ const (
 	DirectionRight Direction = "right"
 )
 
+// GameMode represents different game modes
+type GameMode string
+
+const (
+	GameModeClassic   GameMode = "classic"
+	GameModeChallenge GameMode = "challenge"
+)
+
+// DisabledCell represents a disabled cell position
+type DisabledCell struct {
+	Row int `json:"row"`
+	Col int `json:"col"`
+}
+
 // GameState represents the current state of a 2048 game
 type GameState struct {
-	ID        uuid.UUID `json:"id" db:"id"`
-	UserID    string    `json:"user_id" db:"user_id"`
-	Board     Board     `json:"board" db:"board"`
-	Score     int       `json:"score" db:"score"`
-	GameOver  bool      `json:"game_over" db:"game_over"`
-	Victory   bool      `json:"victory" db:"victory"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	ID           uuid.UUID     `json:"id" db:"id"`
+	UserID       string        `json:"user_id" db:"user_id"`
+	Board        Board         `json:"board" db:"board"`
+	Score        int           `json:"score" db:"score"`
+	GameOver     bool          `json:"game_over" db:"game_over"`
+	Victory      bool          `json:"victory" db:"victory"`
+	GameMode     GameMode      `json:"game_mode" db:"game_mode"`
+	DisabledCell *DisabledCell `json:"disabled_cell,omitempty" db:"disabled_cell"`
+	CreatedAt    time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at" db:"updated_at"`
 }
 
 // Board represents a 4x4 game board
@@ -51,6 +67,7 @@ type LeaderboardEntry struct {
 	Score      int       `json:"score" db:"score"`
 	Rank       int       `json:"rank" db:"rank"`
 	GameID     uuid.UUID `json:"game_id" db:"game_id"`
+	GameMode   GameMode  `json:"game_mode" db:"game_mode"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 }
 
@@ -64,6 +81,18 @@ const (
 	LeaderboardAll     LeaderboardType = "all"
 )
 
+// Combined leaderboard types for different game modes
+const (
+	LeaderboardClassicDaily     LeaderboardType = "classic_daily"
+	LeaderboardClassicWeekly    LeaderboardType = "classic_weekly"
+	LeaderboardClassicMonthly   LeaderboardType = "classic_monthly"
+	LeaderboardClassicAll       LeaderboardType = "classic_all"
+	LeaderboardChallengeDaily   LeaderboardType = "challenge_daily"
+	LeaderboardChallengeWeekly  LeaderboardType = "challenge_weekly"
+	LeaderboardChallengeMonthly LeaderboardType = "challenge_monthly"
+	LeaderboardChallengeAll     LeaderboardType = "challenge_all"
+)
+
 // WebSocketMessage represents a message sent over WebSocket
 type WebSocketMessage struct {
 	Type string      `json:"type"`
@@ -75,23 +104,26 @@ type MoveRequest struct {
 	Direction Direction `json:"direction"`
 }
 
-// NewGameRequest represents a new game request
+// NewGameRequest represents a new game request from client
 type NewGameRequest struct {
-	// Empty for now, can be extended with game options
+	GameMode GameMode `json:"game_mode"`
 }
 
 // LeaderboardRequest represents a leaderboard request
 type LeaderboardRequest struct {
-	Type LeaderboardType `json:"type"`
+	Type     LeaderboardType `json:"type"`
+	GameMode GameMode        `json:"game_mode"`
 }
 
 // GameResponse represents the response sent to client after a move
 type GameResponse struct {
-	Board    Board  `json:"board"`
-	Score    int    `json:"score"`
-	GameOver bool   `json:"game_over"`
-	Victory  bool   `json:"victory"`
-	Message  string `json:"message,omitempty"`
+	Board        Board         `json:"board"`
+	Score        int           `json:"score"`
+	GameOver     bool          `json:"game_over"`
+	Victory      bool          `json:"victory"`
+	GameMode     GameMode      `json:"game_mode"`
+	DisabledCell *DisabledCell `json:"disabled_cell,omitempty"`
+	Message      string        `json:"message,omitempty"`
 }
 
 // LeaderboardResponse represents the leaderboard response
@@ -134,6 +166,31 @@ func (b *Board) GetEmptyCells() [][2]int {
 		}
 	}
 	return empty
+}
+
+// GetEmptyCellsExcluding returns all empty cell positions excluding disabled cells
+func (b *Board) GetEmptyCellsExcluding(disabledCell *DisabledCell) [][2]int {
+	var empty [][2]int
+	for i := 0; i < BoardSize; i++ {
+		for j := 0; j < BoardSize; j++ {
+			if b.IsEmpty(i, j) {
+				// Skip disabled cell
+				if disabledCell != nil && disabledCell.Row == i && disabledCell.Col == j {
+					continue
+				}
+				empty = append(empty, [2]int{i, j})
+			}
+		}
+	}
+	return empty
+}
+
+// IsDisabledCell checks if a cell is disabled
+func (b *Board) IsDisabledCell(row, col int, disabledCell *DisabledCell) bool {
+	if disabledCell == nil {
+		return false
+	}
+	return disabledCell.Row == row && disabledCell.Col == col
 }
 
 // SetCell sets a value at the given position

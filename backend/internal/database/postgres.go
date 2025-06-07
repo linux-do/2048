@@ -127,16 +127,24 @@ func (p *PostgresDB) CreateGame(game *models.GameState) error {
 		return fmt.Errorf("failed to marshal board: %w", err)
 	}
 
+	var disabledCellJSON []byte
+	if game.DisabledCell != nil {
+		disabledCellJSON, err = json.Marshal(game.DisabledCell)
+		if err != nil {
+			return fmt.Errorf("failed to marshal disabled cell: %w", err)
+		}
+	}
+
 	query := `
-		INSERT INTO games (id, user_id, board, score, game_over, victory, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+		INSERT INTO games (id, user_id, board, score, game_over, victory, game_mode, disabled_cell, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 
 	now := time.Now()
 	game.CreatedAt = now
 	game.UpdatedAt = now
 
 	_, err = p.db.Exec(query, game.ID, game.UserID, boardJSON, game.Score,
-		game.GameOver, game.Victory, game.CreatedAt, game.UpdatedAt)
+		game.GameOver, game.Victory, string(game.GameMode), disabledCellJSON, game.CreatedAt, game.UpdatedAt)
 
 	if err != nil {
 		return fmt.Errorf("failed to create game: %w", err)
@@ -152,15 +160,23 @@ func (p *PostgresDB) UpdateGame(game *models.GameState) error {
 		return fmt.Errorf("failed to marshal board: %w", err)
 	}
 
+	var disabledCellJSON []byte
+	if game.DisabledCell != nil {
+		disabledCellJSON, err = json.Marshal(game.DisabledCell)
+		if err != nil {
+			return fmt.Errorf("failed to marshal disabled cell: %w", err)
+		}
+	}
+
 	query := `
-		UPDATE games 
-		SET board = $1, score = $2, game_over = $3, victory = $4, updated_at = $5
-		WHERE id = $6 AND user_id = $7`
+		UPDATE games
+		SET board = $1, score = $2, game_over = $3, victory = $4, game_mode = $5, disabled_cell = $6, updated_at = $7
+		WHERE id = $8 AND user_id = $9`
 
 	game.UpdatedAt = time.Now()
 
 	result, err := p.db.Exec(query, boardJSON, game.Score, game.GameOver,
-		game.Victory, game.UpdatedAt, game.ID, game.UserID)
+		game.Victory, string(game.GameMode), disabledCellJSON, game.UpdatedAt, game.ID, game.UserID)
 
 	if err != nil {
 		return fmt.Errorf("failed to update game: %w", err)
@@ -181,15 +197,17 @@ func (p *PostgresDB) UpdateGame(game *models.GameState) error {
 // GetGame retrieves a game by ID and user ID
 func (p *PostgresDB) GetGame(gameID, userID string) (*models.GameState, error) {
 	query := `
-		SELECT id, user_id, board, score, game_over, victory, created_at, updated_at
+		SELECT id, user_id, board, score, game_over, victory, game_mode, disabled_cell, created_at, updated_at
 		FROM games WHERE id = $1 AND user_id = $2`
 
 	game := &models.GameState{}
 	var boardJSON []byte
+	var disabledCellJSON []byte
+	var gameMode string
 
 	err := p.db.QueryRow(query, gameID, userID).Scan(
 		&game.ID, &game.UserID, &boardJSON, &game.Score,
-		&game.GameOver, &game.Victory, &game.CreatedAt, &game.UpdatedAt)
+		&game.GameOver, &game.Victory, &gameMode, &disabledCellJSON, &game.CreatedAt, &game.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -202,24 +220,36 @@ func (p *PostgresDB) GetGame(gameID, userID string) (*models.GameState, error) {
 		return nil, fmt.Errorf("failed to unmarshal board: %w", err)
 	}
 
+	game.GameMode = models.GameMode(gameMode)
+
+	if len(disabledCellJSON) > 0 {
+		var disabledCell models.DisabledCell
+		if err := json.Unmarshal(disabledCellJSON, &disabledCell); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal disabled cell: %w", err)
+		}
+		game.DisabledCell = &disabledCell
+	}
+
 	return game, nil
 }
 
 // GetUserActiveGame retrieves the user's active (non-finished) game
 func (p *PostgresDB) GetUserActiveGame(userID string) (*models.GameState, error) {
 	query := `
-		SELECT id, user_id, board, score, game_over, victory, created_at, updated_at
-		FROM games 
+		SELECT id, user_id, board, score, game_over, victory, game_mode, disabled_cell, created_at, updated_at
+		FROM games
 		WHERE user_id = $1 AND game_over = false AND victory = false
 		ORDER BY updated_at DESC
 		LIMIT 1`
 
 	game := &models.GameState{}
 	var boardJSON []byte
+	var disabledCellJSON []byte
+	var gameMode string
 
 	err := p.db.QueryRow(query, userID).Scan(
 		&game.ID, &game.UserID, &boardJSON, &game.Score,
-		&game.GameOver, &game.Victory, &game.CreatedAt, &game.UpdatedAt)
+		&game.GameOver, &game.Victory, &gameMode, &disabledCellJSON, &game.CreatedAt, &game.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -230,6 +260,16 @@ func (p *PostgresDB) GetUserActiveGame(userID string) (*models.GameState, error)
 
 	if err := json.Unmarshal(boardJSON, &game.Board); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal board: %w", err)
+	}
+
+	game.GameMode = models.GameMode(gameMode)
+
+	if len(disabledCellJSON) > 0 {
+		var disabledCell models.DisabledCell
+		if err := json.Unmarshal(disabledCellJSON, &disabledCell); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal disabled cell: %w", err)
+		}
+		game.DisabledCell = &disabledCell
 	}
 
 	return game, nil
@@ -294,6 +334,76 @@ func (p *PostgresDB) GetLeaderboard(leaderboardType models.LeaderboardType, limi
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan leaderboard entry: %w", err)
 		}
+		entries = append(entries, entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating leaderboard rows: %w", err)
+	}
+
+	return entries, nil
+}
+
+// GetLeaderboardByMode retrieves leaderboard entries for a specific game mode
+func (p *PostgresDB) GetLeaderboardByMode(leaderboardType models.LeaderboardType, gameMode models.GameMode, limit int) ([]models.LeaderboardEntry, error) {
+	var query string
+	var args []interface{}
+
+	baseQuery := `
+		SELECT
+			g.user_id,
+			u.name as user_name,
+			u.avatar as user_avatar,
+			g.score,
+			g.id as game_id,
+			g.created_at,
+			ROW_NUMBER() OVER (ORDER BY g.score DESC) as rank
+		FROM (
+			SELECT
+				user_id,
+				MAX(score) as score,
+				(ARRAY_AGG(id ORDER BY score DESC))[1] as id,
+				(ARRAY_AGG(created_at ORDER BY score DESC))[1] as created_at
+			FROM games
+			WHERE (game_over = true OR victory = true) AND game_mode = $1`
+
+	var timeFilter string
+	switch leaderboardType {
+	case models.LeaderboardDaily:
+		timeFilter = ` AND created_at >= CURRENT_DATE`
+	case models.LeaderboardWeekly:
+		timeFilter = ` AND created_at >= DATE_TRUNC('week', CURRENT_DATE)`
+	case models.LeaderboardMonthly:
+		timeFilter = ` AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`
+	case models.LeaderboardAll:
+		timeFilter = ""
+	default:
+		return nil, fmt.Errorf("invalid leaderboard type")
+	}
+
+	query = baseQuery + timeFilter + `
+			GROUP BY user_id
+		) g
+		JOIN users u ON g.user_id = u.id
+		ORDER BY g.score DESC LIMIT $2`
+	args = append(args, string(gameMode), limit)
+
+	rows, err := p.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query leaderboard by mode: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []models.LeaderboardEntry
+	for rows.Next() {
+		var entry models.LeaderboardEntry
+		err := rows.Scan(
+			&entry.UserID, &entry.UserName, &entry.UserAvatar,
+			&entry.Score, &entry.GameID, &entry.CreatedAt, &entry.Rank)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan leaderboard entry: %w", err)
+		}
+		entry.GameMode = gameMode
 		entries = append(entries, entry)
 	}
 

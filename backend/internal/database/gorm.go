@@ -263,6 +263,55 @@ func (g *GormDB) GetLeaderboard(leaderboardType models.LeaderboardType, limit in
 	return leaderboardEntries, nil
 }
 
+// GetLeaderboardByMode retrieves leaderboard entries for a specific game mode
+func (g *GormDB) GetLeaderboardByMode(leaderboardType models.LeaderboardType, gameMode models.GameMode, limit int) ([]models.LeaderboardEntry, error) {
+	var entries []models.GormLeaderboardEntry
+
+	// Build subquery to get max score per user for specific game mode
+	subquery := g.db.Table("games").
+		Select("user_id, MAX(score) as max_score").
+		Where("(game_over = ? OR victory = ?) AND game_mode = ?", true, true, string(gameMode))
+
+	switch leaderboardType {
+	case models.LeaderboardDaily:
+		subquery = subquery.Where("created_at >= CURRENT_DATE")
+	case models.LeaderboardWeekly:
+		subquery = subquery.Where("created_at >= DATE_TRUNC('week', CURRENT_DATE)")
+	case models.LeaderboardMonthly:
+		subquery = subquery.Where("created_at >= DATE_TRUNC('month', CURRENT_DATE)")
+	case models.LeaderboardAll:
+		// No additional filter for all-time leaderboard
+	default:
+		return nil, fmt.Errorf("invalid leaderboard type")
+	}
+
+	subquery = subquery.Group("user_id")
+
+	// Main query to get full game details for the max score games
+	query := g.db.Table("games g").
+		Select("g.user_id, u.name as user_name, u.avatar as user_avatar, g.score, g.id as game_id, g.created_at, ROW_NUMBER() OVER (ORDER BY g.score DESC) as rank").
+		Joins("JOIN users u ON g.user_id = u.id").
+		Joins("JOIN (?) max_scores ON g.user_id = max_scores.user_id AND g.score = max_scores.max_score", subquery).
+		Where("(g.game_over = ? OR g.victory = ?) AND g.game_mode = ?", true, true, string(gameMode)).
+		Order("g.score DESC").
+		Limit(limit)
+
+	result := query.Scan(&entries)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to query leaderboard by mode: %w", result.Error)
+	}
+
+	// Convert to regular LeaderboardEntry
+	var leaderboardEntries []models.LeaderboardEntry
+	for _, entry := range entries {
+		leaderboardEntry := entry.ToLeaderboardEntry()
+		leaderboardEntry.GameMode = gameMode
+		leaderboardEntries = append(leaderboardEntries, *leaderboardEntry)
+	}
+
+	return leaderboardEntries, nil
+}
+
 // GetDB returns the underlying GORM database instance
 func (g *GormDB) GetDB() *gorm.DB {
 	return g.db

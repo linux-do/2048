@@ -52,8 +52,17 @@ func (c *Client) handleMove(data interface{}) {
 		return
 	}
 
-	// Execute move
-	newBoard, scoreGained, moved := c.hub.gameEngine.Move(gameState.Board, moveRequest.Direction)
+	// Execute move based on game mode
+	var newBoard models.Board
+	var scoreGained int
+	var moved bool
+
+	if gameState.GameMode == models.GameModeChallenge && gameState.DisabledCell != nil {
+		newBoard, scoreGained, moved = c.hub.gameEngine.MoveWithDisabledCell(gameState.Board, moveRequest.Direction, gameState.DisabledCell)
+	} else {
+		newBoard, scoreGained, moved = c.hub.gameEngine.Move(gameState.Board, moveRequest.Direction)
+	}
+
 	if !moved {
 		c.sendError("Invalid move - no tiles moved")
 		return
@@ -68,9 +77,15 @@ func (c *Client) handleMove(data interface{}) {
 		gameState.Victory = true
 	}
 
-	// Check for game over
-	if c.hub.gameEngine.IsGameOver(gameState.Board) {
-		gameState.GameOver = true
+	// Check for game over (use appropriate logic based on game mode)
+	if gameState.GameMode == models.GameModeChallenge && gameState.DisabledCell != nil {
+		if c.hub.gameEngine.IsGameOverWithDisabledCell(gameState.Board, gameState.DisabledCell) {
+			gameState.GameOver = true
+		}
+	} else {
+		if c.hub.gameEngine.IsGameOver(gameState.Board) {
+			gameState.GameOver = true
+		}
 	}
 
 	// Save updated game state to cache
@@ -100,10 +115,12 @@ func (c *Client) handleMove(data interface{}) {
 
 	// Send response
 	response := models.GameResponse{
-		Board:    gameState.Board,
-		Score:    gameState.Score,
-		GameOver: gameState.GameOver,
-		Victory:  gameState.Victory,
+		Board:        gameState.Board,
+		Score:        gameState.Score,
+		GameOver:     gameState.GameOver,
+		Victory:      gameState.Victory,
+		GameMode:     gameState.GameMode,
+		DisabledCell: gameState.DisabledCell,
 	}
 
 	if gameState.Victory {
@@ -127,17 +144,45 @@ func (c *Client) handleMove(data interface{}) {
 
 // handleNewGame handles new game requests
 func (c *Client) handleNewGame(data interface{}) {
-	// Create new game
-	board := c.hub.gameEngine.NewGame()
+	// Parse new game request
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		c.sendError("Invalid new game data")
+		return
+	}
+
+	var newGameRequest models.NewGameRequest
+	if err := json.Unmarshal(dataBytes, &newGameRequest); err != nil {
+		// Default to classic mode if no mode specified
+		newGameRequest.GameMode = models.GameModeClassic
+	}
+
+	// Validate game mode
+	if newGameRequest.GameMode != models.GameModeClassic && newGameRequest.GameMode != models.GameModeChallenge {
+		newGameRequest.GameMode = models.GameModeClassic
+	}
+
+	// Create new game based on mode
+	var board models.Board
+	var disabledCell *models.DisabledCell
+
+	if newGameRequest.GameMode == models.GameModeChallenge {
+		board, disabledCell = c.hub.gameEngine.NewGameWithMode(models.GameModeChallenge)
+	} else {
+		board = c.hub.gameEngine.NewGame()
+	}
+
 	gameID := uuid.New()
 
 	gameState := &models.GameState{
-		ID:       gameID,
-		UserID:   c.userID,
-		Board:    board,
-		Score:    0,
-		GameOver: false,
-		Victory:  false,
+		ID:           gameID,
+		UserID:       c.userID,
+		Board:        board,
+		Score:        0,
+		GameOver:     false,
+		Victory:      false,
+		GameMode:     newGameRequest.GameMode,
+		DisabledCell: disabledCell,
 	}
 
 	// Save new game state to cache
@@ -161,12 +206,19 @@ func (c *Client) handleNewGame(data interface{}) {
 	c.gameID = gameID
 
 	// Send response
+	statusMessage := "New game started!"
+	if gameState.GameMode == models.GameModeChallenge {
+		statusMessage = "Challenge mode started! One cell is disabled."
+	}
+
 	response := models.GameResponse{
-		Board:    gameState.Board,
-		Score:    gameState.Score,
-		GameOver: gameState.GameOver,
-		Victory:  gameState.Victory,
-		Message:  "New game started!",
+		Board:        gameState.Board,
+		Score:        gameState.Score,
+		GameOver:     gameState.GameOver,
+		Victory:      gameState.Victory,
+		GameMode:     gameState.GameMode,
+		DisabledCell: gameState.DisabledCell,
+		Message:      statusMessage,
 	}
 
 	message := models.WebSocketMessage{
@@ -201,8 +253,14 @@ func (c *Client) handleGetLeaderboard(data interface{}) {
 		return
 	}
 
-	// Get leaderboard entries
-	entries, err := c.hub.db.GetLeaderboard(leaderboardRequest.Type, 100)
+	// Validate game mode
+	if leaderboardRequest.GameMode != models.GameModeClassic &&
+		leaderboardRequest.GameMode != models.GameModeChallenge {
+		leaderboardRequest.GameMode = models.GameModeClassic
+	}
+
+	// Get leaderboard entries for the specific game mode
+	entries, err := c.hub.db.GetLeaderboardByMode(leaderboardRequest.Type, leaderboardRequest.GameMode, 100)
 	if err != nil {
 		log.Printf("Failed to get leaderboard: %v", err)
 		c.sendError("Failed to get leaderboard")
