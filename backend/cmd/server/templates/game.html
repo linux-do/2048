@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.title}}</title>
     <link rel="stylesheet" href="{{static "/css/main.css"}}">
+    <link rel="stylesheet" href="{{static "/css/dark.css"}}">
     <link rel="stylesheet" href="{{static "/css/mobile.css"}}">
 
     <meta name="theme-color" content="#faf8ef">
@@ -25,6 +26,7 @@
                     {{end}}
                     <span class="user-name">{{.user.Name}}</span>
                     <button class="logout-btn" onclick="logout()">Logout</button>
+                    <button class="theme-toggle-btn" id="theme-toggle">Dark Mode</button>
                 </div>
             </div>
         </header>
@@ -80,6 +82,7 @@
 <script src="{{static "/js/websocket.js"}}"></script>
 <script src="{{static "/js/canvas-game.js"}}"></script>
 <script src="{{static "/js/auth.js"}}"></script>
+<script src="{{static "/js/theme.js"}}"></script>
 <script>
     // Initialize Canvas Game
     document.addEventListener('DOMContentLoaded', function() {
@@ -188,6 +191,22 @@
 }
 
 .logout-btn:hover {
+    background: #776e65;
+}
+
+.theme-toggle-btn {
+    background: #8f7a66;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin-left: 8px;
+}
+
+.theme-toggle-btn:hover {
     background: #776e65;
 }
 
@@ -398,6 +417,13 @@
         padding: 6px 12px;
         font-size: 0.8rem;
         border-radius: 4px;
+    }
+
+    .theme-toggle-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 4px;
+        margin-left: 8px;
     }
 
     .game-info {
